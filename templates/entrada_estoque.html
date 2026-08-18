@@ -1,1 +1,57 @@
 
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Entrada de Estoque - Mercado</title>
+    <style>
+        * { box-sizing: border-box; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: #f4f6f9; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: #ffffff; padding: 30px; border-radius: 10px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); width: 100%; max-width: 420px; }
+        h2 { color: #333; margin-top: 0; text-align: center; font-size: 1.5rem; }
+        .campo { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; color: #555; font-weight: 600; }
+        input { width: 100%; padding: 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 1rem; transition: border-color 0.2s; }
+        input:focus { border-color: #28a745; outline: none; }
+        button { background-color: #28a745; color: white; border: none; padding: 12px; width: 100%; font-size: 1rem; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background-color 0.2s; }
+        button:hover { background-color: #218838; }
+        .alerta { padding: 12px; margin-bottom: 20px; border-radius: 6px; text-align: center; font-weight: bold; }
+        .alerta-sucesso { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .alerta-erro { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .voltar { display: block; text-align: center; margin-top: 15px; color: #6c757d; text-decoration: none; font-size: 0.9rem; }
+        .voltar:hover { text-decoration: underline; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>📦 Entrada de Mercadoria</h2>
+
+        {% if mensagem %}
+            {% if 'Sucesso' in mensagem %}
+                <div class="alerta alerta-sucesso">{{ mensagem }}</div>
+            {% else %}
+                <div class="alerta alerta-erro">{{ mensagem }}</div>
+            {% endif %}
+        {% endif %}
+
+        <form method="POST">
+            <div class="campo">
+                <label for="codigo_barra">Código de Barras:</label>
+                <input type="text" id="codigo_barra" name="codigo_barra" required placeholder="Digite ou passe o leitor" autofocus>
+            </div>
+
+            <div class="campo">
+                <label for="quantidade">Quantidade Recebida:</label>
+                <input type="number" id="quantidade" name="quantidade" min="1" required placeholder="Ex: 50">
+            </div>
+
+            <button type="submit">Adicionar ao Estoque</button>
+        </form>
+
+        <a href="/" class="voltar">← Voltar ao PDV</a>
+    </div>
+
+</body>
+</html>
