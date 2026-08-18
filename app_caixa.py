@@ -214,5 +214,31 @@ def registrar_venda():
             conexao.close()
         return render_template_string(HTML_CAIXA, erro=f"Erro ao salvar venda: {e}")
 
+        @app.route('/estoque/entrada', methods=['GET', 'POST'])
+def entrada_estoque():
+    mensagem = None
+    if request.method == 'POST':
+        codigo_barra = request.form.get('codigo_barra')
+        quantidade = int(request.form.get('quantidade'))
+
+        conn = get_db_connection()
+        cur = conn.cursor()
+
+        cur.execute(
+            "UPDATE produto SET estoque = estoque + %s WHERE codigo_barra = %s",
+            (quantidade, codigo_barra)
+        )
+        conn.commit()
+
+        if cur.rowcount > 0:
+            mensagem = f"Sucesso! Adicionadas {quantidade} unidades ao produto."
+        else:
+            mensagem = "Erro: Produto não encontrado com esse código!"
+
+        cur.close()
+        conn.close()
+
+    return render_template('entrada_estoque.html', mensagem=mensagem)
+
 if __name__ == '__main__':
     app.run(host='0.0.0.0', port=5000, debug=True)
