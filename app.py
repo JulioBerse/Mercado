@@ -1,7 +1,10 @@
-from flask import Flask, render_template_string
+from flask import Flask, render_template_string, request, redirect, url_for, session
 import psycopg2
 
 app = Flask(__name__)
+
+app.secret_key = 'uma_chave_bem_secreta_aqui' # Troque por algo aleatório
+
 
 # CREDENCIAIS DO POSTGRESQL
 HOST = "localhost"
@@ -53,7 +56,74 @@ HTML_TEMPLATE = """
 </html>
 """
 
+# TELA DE LOGIN EM HTML (Estilo Limpo e Profissional)
+HTML_LOGIN = """
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Grupo Yamasaki</title>
+    <style>
+        body { font-family: Arial, sans-serif; background-color: #1e1e2e; color: #fff; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-box { background: #2a2a3c; padding: 30px; border-radius: 8px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); width: 300px; text-align: center; }
+        h2 { margin-bottom: 20px; color: #4CAF50; }
+        input { width: 100%; padding: 10px; margin: 10px 0; border: 1px solid #444; border-radius: 4px; background: #1e1e2e; color: #fff; box-sizing: border-box; }
+        button { width: 100%; padding: 10px; background: #4CAF50; border: none; border-radius: 4px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; }
+        button:hover { background: #45a049; }
+        .erro { color: #ff5555; font-size: 14px; margin-top: 10px; }
+    </style>
+</head>
+<body>
+    <div class="login-box">
+        <h2>Grupo Yamasaki</h2>
+        <form method="POST">
+            <input type="text" name="login" placeholder="Usuário" required autocomplete="off">
+            <input type="password" name="senha" placeholder="Senha" required>
+            <button type="submit">Entrar</button>
+            {% if erro %}
+                <div class="erro">{{ erro }}</div>
+            {% endif %}
+        </form>
+    </div>
+</body>
+</html>
+"""
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    erro = None
+    if request.method == 'POST':
+        login_input = request.form['login']
+        senha_input = request.form['senha']
+        
+        # Conexão com o banco Neon
+        # (Certifique-se de usar a string de conexão correta ou suas variáveis de host/user/senha)
+        conn = psycopg2.connect(
+            host=HOST, database=BANCO, user=USUARIO, password=SENHA, port=PORTA, sslmode='require'
+        )
+        cursor = conn.cursor()
+        cursor.execute("SELECT login, perfil FROM usuario WHERE login = %s AND senha = %s", (login_input, senha_input))
+        usuario = cursor.fetchone()
+        cursor.close()
+        conn.close()
+        
+        if usuario:
+            session['usuario'] = usuario[0]
+            session['perfil'] = usuario[1]
+            return redirect('/') # Redireciona para o PDV / Página Inicial
+        else:
+            erro = "Usuário ou senha inválidos!"
+            
+    return render_template_string(HTML_LOGIN, erro=erro)
+
+@app.route('/logout')
+def logout():
+    session.clear()
+    return redirect(url_for('login'))
+
 @app.route('/')
+if 'usuario' not in session:
+    return redirect(url_for('login'))
 def home():
     try:
         conexao = psycopg2.connect(
