@@ -15,7 +15,7 @@ HTML_CAIXA = """
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    <a href="/estoque/entrada" style="padding: 10px 15px; background: #28a745; color: white; border-radius: 5px; text-decoration: none; font-weight: bold; display: inline-block; margin-bottom: 15px;">📦 Ir para Entrada de Estoque</a>
+    
     <meta charset="UTF-8">
     <title>Berse Supermercados - PDV</title>
     <style>
