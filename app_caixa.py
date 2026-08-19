@@ -1,3 +1,16 @@
+import os
+import psycopg2
+from flask import Flask, render_template_string, request, jsonify
+
+app = Flask(__name__)
+
+# CONFIGURAÇÕES DO BANCO DE DADOS
+HOST = "localhost"
+PORTA = "5432"
+BANCO = "Mercado"
+USUARIO = "postgres"
+SENHA = "j"
+
 HTML_CAIXA = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -111,6 +124,55 @@ HTML_CAIXA = """
 </html>
 """
 
+HTML_ESTOQUE = """
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Entrada de Estoque - Berse Supermercados</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; background-color: #f0f2f5; display: flex; justify-content: center; }
+        .card { background: #ffffff; width: 100%; max-width: 500px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
+        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
+        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        input:focus { border-color: #28a745; outline: none; }
+        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #218838; }
+        .msg { margin-top: 20px; padding: 12px; background: #e8f5e9; color: #2e7d32; border-radius: 6px; font-weight: bold; text-align: center; }
+        .btn-voltar { display: inline-block; margin-top: 20px; color: #007bff; text-decoration: none; font-weight: 600; }
+        .btn-voltar:hover { text-decoration: underline; }
+        .hint { font-size: 12px; color: #666; margin-top: 4px; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📦 Entrada de Estoque</h1>
+        <form method="POST">
+            <label for="identificador">Código de Barras ou ID do Produto:</label>
+            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID (ex: 5) ou Código (ex: 789123...)" required autofocus>
+            <div class="hint">* Digite apenas o ID numérico ou o Código de Barras completo.</div>
+
+            <label for="quantidade">Quantidade a Adicionar:</label>
+            <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 10" required min="1">
+
+            <button type="submit">Atualizar Estoque</button>
+        </form>
+
+        {% if msg %}
+            <div class="msg">{{ msg }}</div>
+        {% endif %}
+
+        <a class="btn-voltar" href="/">← Voltar para o PDV (Frente de Caixa)</a>
+    </div>
+</body>
+</html>
+"""
+
+@app.route('/')
+def home():
+    return render_template_string(HTML_CAIXA)
+
 @app.route('/buscar_produto', methods=['GET'])
 def buscar_produto():
     q = request.args.get('q', '').strip()
@@ -162,3 +224,41 @@ def registrar_venda():
         return render_template_string(HTML_CAIXA, msg="Venda concluída com sucesso!")
     except Exception as e:
         return render_template_string(HTML_CAIXA, erro=f"Erro ao registrar venda: {e}")
+
+@app.route('/estoque/entrada', methods=['GET', 'POST'])
+def entrada_estoque():
+    mensagem = None
+
+    if request.method == 'POST':
+        identificador = request.form.get('identificador', '').strip()
+        quantidade = int(request.form.get('quantidade', 0))
+
+        db_url = os.environ.get('DATABASE_URL', f"postgresql://{USUARIO}:{SENHA}@{HOST}:{PORTA}/{BANCO}")
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+
+        if identificador.isdigit():
+            cur.execute(
+                "UPDATE produto SET estoque = estoque + %s WHERE id = %s OR codigo_barra = %s",
+                (quantidade, int(identificador), identificador)
+            )
+        else:
+            cur.execute(
+                "UPDATE produto SET estoque = estoque + %s WHERE codigo_barra = %s",
+                (quantidade, identificador)
+            )
+
+        conn.commit()
+
+        if cur.rowcount > 0:
+            mensagem = f"Sucesso! Adicionadas {quantidade} unidades ao estoque."
+        else:
+            mensagem = "Erro: Nenhum produto foi encontrado com esse ID ou Código de Barras!"
+
+        cur.close()
+        conn.close()
+
+    return render_template_string(HTML_ESTOQUE, msg=mensagem)
+
+if __name__ == '__main__':
+    app.run(debug=True)
