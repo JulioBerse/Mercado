@@ -41,9 +41,9 @@ HTML_CAIXA = """
         <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
         <h1>🛒 Frente de Caixa (PDV)</h1>
 
-        <form method="POST" action="/registrar_venda">
+        <form id="formVenda" method="POST" action="/registrar_venda">
             <label for="identificador">ID ou Código de Barras do Produto:</label>
-            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID ou bipador de código" required autofocus oninput="buscarProduto()">
+            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB" required autofocus oninput="buscarProduto()" onchange="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
 
             <div class="info-box">
                 <div class="info-row">
@@ -66,7 +66,7 @@ HTML_CAIXA = """
                 </div>
             </div>
 
-            <button type="submit">Finalizar Venda</button>
+            <button type="submit" id="btnFinalizar">Registrar Venda (ENTER)</button>
         </form>
 
         {% if msg %}
@@ -104,6 +104,12 @@ HTML_CAIXA = """
                 }
             } catch (e) {
                 resetarCampos();
+            }
+        }
+
+        function tratarTeclaIdentificador(e) {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                buscarProduto();
             }
         }
 
