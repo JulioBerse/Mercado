@@ -221,6 +221,43 @@ HTML_ESTOQUE = """
             Powered by <strong>Yamasaki Technology Solution</strong> 🚀
         </div>
     </div>
+    <form method="POST">
+            <label for="identificador">Código de Barras ou ID do Produto:</label>
+            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID ou Código..." required autofocus>
+            
+            <!-- NOVO CAMPO -->
+            <label for="nome_display">Produto:</label>
+            <input type="text" id="nome_display" placeholder="Nome aparecerá aqui..." style="background-color: #e9ecef; color: #555;" disabled>
+
+            <label for="quantidade">Quantidade a Adicionar:</label>
+            <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 10" required min="1">
+
+            <button type="submit">Atualizar Estoque</button>
+        </form>
+
+        <!-- SCRIPT PARA BUSCA AUTOMÁTICA -->
+        <script>
+            const inputId = document.getElementById('identificador');
+            const inputNome = document.getElementById('nome_display');
+            const inputQtd = document.getElementById('quantidade');
+
+            inputId.addEventListener('blur', function() {
+                const valor = inputId.value;
+                if (!valor) return;
+
+                fetch(`/api/produto/${valor}`)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.encontrado) {
+                            inputNome.value = data.nome;
+                            inputQtd.focus();
+                        } else {
+                            inputNome.value = "Produto não encontrado!";
+                            inputId.focus();
+                        }
+                    });
+            });
+        </script>
 </body>
 </html>
 """
@@ -258,4 +295,34 @@ def entrada_estoque():
             conn.close()
 
     return render_template_string(HTML_ESTOQUE, msg=mensagem)
+    from flask import jsonify
+
+# Rota para buscar o produto via JavaScript (AJAX)
+@app.route('/api/produto/<int:produto_id>')
+def api_produto(produto_id):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    cur.execute('SELECT nome_produto FROM produtos WHERE id = %s;', (produto_id,))
+    produto = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if produto:
+        return jsonify({'encontrado': True, 'nome': produto[0]})
+    else:
+        return jsonify({'encontrado': False, 'nome': 'Produto não encontrado'})
+        @app.route('/api/produto/<identificador>')
+def api_produto(identificador):
+    conn = get_db_connection()
+    cur = conn.cursor()
+    # Busca pelo ID ou pelo código de barras
+    cur.execute('SELECT nome_produto FROM produtos WHERE id = %s OR codigo_barras = %s;', (identificador, identificador))
+    produto = cur.fetchone()
+    cur.close()
+    conn.close()
+    
+    if produto:
+        return jsonify({'encontrado': True, 'nome': produto[0]})
+    else:
+        return jsonify({'encontrado': False, 'nome': 'Produto não encontrado'})
 
