@@ -229,60 +229,6 @@ HTML_ESTOQUE = """
 def index():
     return render_template_string(HTML_CAIXA)
 
-@app.route('/registrar_venda', methods=['POST'])
-def registrar_venda():
-    identificador = request.form.get('identificador', '').strip()
-    quantidade = int(request.form.get('quantidade', 1))
-    forma_pgto = request.form.get('forma_pagamento', 'Dinheiro')
-
-    db_url = os.environ.get('DATABASE_URL') 
-    conn = psycopg2.connect(db_url)
-    cur = conn.cursor()
-
-    try:
-        cur.execute(
-            "CALL registrar_venda_completa(%s, %s, %s);", 
-            (identificador, quantidade, forma_pgto)
-        )
-        conn.commit()
-        mensagem = "Venda realizada com sucesso!"
-    except Exception as e:
-        conn.rollback()
-        mensagem = f"Erro: {e}"
-    finally:
-        cur.close()
-        conn.close()
-
-    return render_template_string(HTML_CAIXA, msg=mensagem)
-
-@app.route('/buscar_produto', methods=['GET'])
-def buscar_produto():
-    termo = request.args.get('q', '').strip()
-    if not termo:
-        return jsonify({'sucesso': False})
-
-    db_url = os.environ.get('DATABASE_URL')
-    conn = psycopg2.connect(db_url)
-    cur = conn.cursor()
-
-    try:
-        # Tenta buscar por ID se for numérico, senão busca por código de barras
-        if termo.isdigit():
-            cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTOS} WHERE id = %s;", (int(termo),))
-        else:
-            cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTOS} WHERE codigo_barras = %s;", (termo,))
-        
-        row = cur.fetchone()
-        if row:
-            return jsonify({'sucesso': True, 'nome': row[0], 'preco': float(row[1])})
-        else:
-            return jsonify({'sucesso': False})
-    except Exception as e:
-        return jsonify({'sucesso': False, 'erro': str(e)})
-    finally:
-        cur.close()
-        conn.close()
-
 @app.route('/estoque/entrada', methods=['GET', 'POST'])
 def entrada_estoque():
     mensagem = None
@@ -296,9 +242,11 @@ def entrada_estoque():
 
         try:
             if identificador.isdigit():
-                cur.execute(f"UPDATE {TABELA_PRODUTOS} SET quantidade = quantidade + %s WHERE id = %s;", (quantidade, int(identificador)))
+                # AQUI MUDOU DE 'quantidade' PARA 'estoque'
+                cur.execute(f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque + %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
-                cur.execute(f"UPDATE {TABELA_PRODUTOS} SET quantidade = quantidade + %s WHERE codigo_barras = %s;", (quantidade, identificador))
+                # AQUI TAMBÉM MUDOU DE 'quantidade' PARA 'estoque'
+                cur.execute(f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque + %s WHERE codigo_barras = %s;", (quantidade, identificador))
             
             conn.commit()
             mensagem = "Estoque atualizado com sucesso!"
@@ -311,5 +259,3 @@ def entrada_estoque():
 
     return render_template_string(HTML_ESTOQUE, msg=mensagem)
 
-if __name__ == '__main__':
-    app.run(debug=True)
