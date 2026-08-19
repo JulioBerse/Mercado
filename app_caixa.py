@@ -1,4 +1,5 @@
-from flask import Flask, render_template_string, request, jsonify
+import os
+from flask import Flask, render_template_string, request, jsonify, render_template
 import psycopg2
 
 app = Flask(__name__)
@@ -214,14 +215,15 @@ def registrar_venda():
             conexao.close()
         return render_template_string(HTML_CAIXA, erro=f"Erro ao salvar venda: {e}")
 
-        @app.route('/estoque/entrada', methods=['GET', 'POST'])
+@app.route('/estoque/entrada', methods=['GET', 'POST'])
 def entrada_estoque():
     mensagem = None
     if request.method == 'POST':
         codigo_barra = request.form.get('codigo_barra')
         quantidade = int(request.form.get('quantidade'))
 
-        conn = get_db_connection()
+        db_url = os.environ.get('DATABASE_URL', f"postgresql://{USUARIO}:{SENHA}@{HOST}:{PORTA}/{BANCO}")
+        conn = psycopg2.connect(db_url)
         cur = conn.cursor()
 
         cur.execute(
@@ -238,7 +240,4 @@ def entrada_estoque():
         cur.close()
         conn.close()
 
-    return render_template('entrada_estoque.html', mensagem=mensagem)
-
-if __name__ == '__main__':
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    return render_template_string(HTML_CAIXA, msg=mensagem)
