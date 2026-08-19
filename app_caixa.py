@@ -37,9 +37,22 @@ HTML_CAIXA = """
         .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
         .msg-erro { background: #ffebee; color: #c62828; }
         .nav-link { display: inline-block; margin-bottom: 15px; color: #28a745; text-decoration: none; font-weight: bold; }
+        /* Adicione no seu <style> existente */
+.brand-header { text-align: center; margin-bottom: 20px; }
+.brand-header h2 { color: #007bff; margin: 0; font-size: 22px; font-weight: bold; letter-spacing: 1px; }
+.footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
     </style>
 </head>
 <body>
+    <!-- No topo do card, logo abaixo da abertura da div .card -->
+<div class="brand-header">
+    <h2>🏪 BERSE SUPERMERCADOS</h2>
+</div>
+
+<!-- E no rodapé do card, logo antes de fechar a div .card -->
+<div class="footer-system">
+    Powered by <strong>Yamasaki Technology Solution</strong> 🚀
+</div>
     <div class="card">
         <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
         <h1>🛒 Frente de Caixa (PDV)</h1>
@@ -171,9 +184,22 @@ HTML_ESTOQUE = """
         .btn-voltar { display: inline-block; margin-top: 20px; color: #007bff; text-decoration: none; font-weight: 600; }
         .btn-voltar:hover { text-decoration: underline; }
         .hint { font-size: 12px; color: #666; margin-top: 4px; }
+        /* Adicione no seu <style> existente */
+.brand-header { text-align: center; margin-bottom: 20px; }
+.brand-header h2 { color: #007bff; margin: 0; font-size: 22px; font-weight: bold; letter-spacing: 1px; }
+.footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
     </style>
 </head>
 <body>
+    <!-- No topo do card, logo abaixo da abertura da div .card -->
+<div class="brand-header">
+    <h2>🏪 BERSE SUPERMERCADOS</h2>
+</div>
+
+<!-- E no rodapé do card, logo antes de fechar a div .card -->
+<div class="footer-system">
+    Powered by <strong>Yamasaki Technology Solution</strong> 🚀
+</div>
     <div class="card">
         <h1>📦 Entrada de Estoque</h1>
         <form method="POST">
