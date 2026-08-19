@@ -256,9 +256,9 @@ def buscar_produto():
     cur = conn.cursor()
     try:
         if q.isdigit():
-            cur.execute(f"SELECT nome_produto, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s;", (int(q),))
+            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s;", (int(q),))
         else:
-            cur.execute(f"SELECT nome_produto, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barras = %s;", (q,))
+            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barras = %s;", (q,))
         
         produto = cur.fetchone()
         if produto:
@@ -280,9 +280,9 @@ def api_produto(identificador):
         print(f"--- BUSCANDO PRODUTO: '{identificador}' ---")
         
         if identificador.isdigit():
-            cur.execute(f"SELECT nome_produto FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
+            cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
         else:
-            cur.execute(f"SELECT nome_produto FROM {TABELA_PRODUTO} WHERE codigo_barras = %s;", (identificador,))
+            cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE codigo_barras = %s;", (identificador,))
         
         produto = cur.fetchone()
         print(f"Resultado do banco: {produto}")
