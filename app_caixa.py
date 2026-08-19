@@ -11,7 +11,7 @@ BANCO = "Mercado"
 USUARIO = "postgres"
 SENHA = "j"
 
-# NOME DA TABELA NO POSTGRESQL (Ajustado para 'produtos')
+# NOME DA TABELA NO POSTGRESQL (Ajustado para 'produto')
 TABELA_PRODUTOS = "produto"
 
 HTML_CAIXA = """
@@ -25,8 +25,8 @@ HTML_CAIXA = """
         .card { background: #ffffff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
         label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
-        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
-        input:focus { border-color: #007bff; outline: none; }
+        input, select { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #fff; }
+        input:focus, select:focus { border-color: #007bff; outline: none; }
         button { margin-top: 25px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         button:hover { background-color: #0056b3; }
         .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px; }
@@ -45,17 +45,25 @@ HTML_CAIXA = """
 <body>
 
     <div class="card">
+        <!-- LOGOMARCA / CABEÇALHO -->
+        <div class="brand-header">
+            <h2>🏪 BERSE SUPERMERCADOS</h2>
+        </div>
+
         <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
         <h1>🛒 Frente de Caixa (PDV)</h1>
 
         <form id="formVenda" method="POST" action="/registrar_venda">
             <label for="identificador">ID ou Código de Barras do Produto:</label>
             <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
-            <select name="forma_pagamento">
-    <option value="Dinheiro">Dinheiro</option>
-    <option value="Cartao">Cartão</option>
-    <option value="Pix">Pix</option>
-</select>
+            
+            <label for="forma_pagamento">Forma de Pagamento:</label>
+            <select name="forma_pagamento" id="forma_pagamento">
+                <option value="Dinheiro">Dinheiro</option>
+                <option value="Cartao">Cartão</option>
+                <option value="Pix">Pix</option>
+            </select>
+
             <div class="info-box">
                 <div class="info-row">
                     <span>Produto:</span>
@@ -81,11 +89,13 @@ HTML_CAIXA = """
         </form>
 
         {% if msg %}
-            <div class="msg msg-sucesso">{{ msg }}</div>
+            <div class="msg {% if 'Erro' in msg %}msg-erro{% else %}msg-sucesso{% endif %}">{{ msg }}</div>
         {% endif %}
-        {% if erro %}
-            <div class="msg msg-erro">{{ erro }}</div>
-        {% endif %}
+
+        <!-- RODAPÉ INSTITUCIONAL -->
+        <div class="footer-system">
+            Powered by <strong>Yamasaki Technology Solution</strong> 🚀
+        </div>
     </div>
 
     <script>
@@ -183,6 +193,11 @@ HTML_ESTOQUE = """
 <body>
 
     <div class="card">
+        <!-- LOGOMARCA / CABEÇALHO -->
+        <div class="brand-header">
+            <h2>🏪 BERSE SUPERMERCADOS</h2>
+        </div>
+
         <h1>📦 Entrada de Estoque</h1>
         <form method="POST">
             <label for="identificador">Código de Barras ou ID do Produto:</label>
@@ -200,37 +215,101 @@ HTML_ESTOQUE = """
         {% endif %}
 
         <a class="btn-voltar" href="/">← Voltar para o PDV (Frente de Caixa)</a>
+
+        <!-- RODAPÉ INSTITUCIONAL -->
+        <div class="footer-system">
+            Powered by <strong>Yamasaki Technology Solution</strong> 🚀
+        </div>
     </div>
 </body>
 </html>
 """
 
-@app.route('/registrar_venda', methods=['GET', 'POST'])
+@app.route('/')
+def index():
+    return render_template_string(HTML_CAIXA)
+
+@app.route('/registrar_venda', methods=['POST'])
 def registrar_venda():
+    identificador = request.form.get('identificador', '').strip()
+    quantidade = int(request.form.get('quantidade', 1))
+    forma_pgto = request.form.get('forma_pagamento', 'Dinheiro')
+
+    db_url = os.environ.get('DATABASE_URL') 
+    conn = psycopg2.connect(db_url)
+    cur = conn.cursor()
+
+    try:
+        cur.execute(
+            "CALL registrar_venda_completa(%s, %s, %s);", 
+            (identificador, quantidade, forma_pgto)
+        )
+        conn.commit()
+        mensagem = "Venda realizada com sucesso!"
+    except Exception as e:
+        conn.rollback()
+        mensagem = f"Erro: {e}"
+    finally:
+        cur.close()
+        conn.close()
+
+    return render_template_string(HTML_CAIXA, msg=mensagem)
+
+@app.route('/buscar_produto', methods=['GET'])
+def buscar_produto():
+    termo = request.args.get('q', '').strip()
+    if not termo:
+        return jsonify({'sucesso': False})
+
+    db_url = os.environ.get('DATABASE_URL')
+    conn = psycopg2.connect(db_url)
+    cur = conn.cursor()
+
+    try:
+        # Tenta buscar por ID se for numérico, senão busca por código de barras
+        if termo.isdigit():
+            cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTOS} WHERE id = %s;", (int(termo),))
+        else:
+            cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTOS} WHERE codigo_barras = %s;", (termo,))
+        
+        row = cur.fetchone()
+        if row:
+            return jsonify({'sucesso': True, 'nome': row[0], 'preco': float(row[1])})
+        else:
+            return jsonify({'sucesso': False})
+    except Exception as e:
+        return jsonify({'sucesso': False, 'erro': str(e)})
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route('/estoque/entrada', methods=['GET', 'POST'])
+def entrada_estoque():
     mensagem = None
-    # Se o usuário clicou em registrar (POST)
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip()
         quantidade = int(request.form.get('quantidade', 1))
-        forma_pgto = request.form.get('forma_pagamento', 'Dinheiro')
 
-        db_url = os.environ.get('DATABASE_URL') 
+        db_url = os.environ.get('DATABASE_URL')
         conn = psycopg2.connect(db_url)
         cur = conn.cursor()
 
         try:
-            cur.execute(
-                "CALL registrar_venda_completa(%s, %s, %s);", 
-                (identificador, quantidade, forma_pgto)
-            )
+            if identificador.isdigit():
+                cur.execute(f"UPDATE {TABELA_PRODUTOS} SET quantidade = quantidade + %s WHERE id = %s;", (quantidade, int(identificador)))
+            else:
+                cur.execute(f"UPDATE {TABELA_PRODUTOS} SET quantidade = quantidade + %s WHERE codigo_barras = %s;", (quantidade, identificador))
+            
             conn.commit()
-            mensagem = "Venda realizada com sucesso!"
+            mensagem = "Estoque atualizado com sucesso!"
         except Exception as e:
             conn.rollback()
-            mensagem = f"Erro: {e}"
+            mensagem = f"Erro ao atualizar estoque: {e}"
         finally:
             cur.close()
             conn.close()
 
-    # Se for GET (abrir a página) ou após o POST, renderiza o HTML do caixa
-    return render_template_string(HTML_CAIXA, msg=mensagem)
+    return render_template_string(HTML_ESTOQUE, msg=mensagem)
+
+if __name__ == '__main__':
+    app.run(debug=True)
