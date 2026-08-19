@@ -151,7 +151,7 @@ def registrar_venda():
             )
         else:
             cur.execute(
-                "UPDATE produto SET estoque = estoque + %s WHERE codigo_barra = %s",
+                "UPDATE produto SET estoque = estoque - %s WHERE codigo_barra = %s",
                 (quantidade, identificador)
             )
 
