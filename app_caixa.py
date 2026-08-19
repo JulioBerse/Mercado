@@ -196,7 +196,7 @@ HTML_ESTOQUE = """
             <input type="text" id="nome_display" placeholder="Nome do produto..." style="background-color: #e9ecef; color: #555;" disabled>
 
             <label for="quantidade">Quantidade a Adicionar:</label>
-            <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 10" required min="1">
+            <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 10 ou -10" required>
 
             <button type="submit">Atualizar Estoque</button>
         </form>
