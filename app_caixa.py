@@ -245,31 +245,33 @@ HTML_ESTOQUE = """
 def index():
     return render_template_string(HTML_CAIXA)
 
-@app.route('/registrar_venda', methods=['POST'])
-def registrar_venda():
-    identificador = request.form.get('identificador', '').strip()
-    quantidade = int(request.form.get('quantidade', 1))
-    forma_pagamento = request.form.get('forma_pagamento', 'Dinheiro')
+@app.route('/', methods=['GET', 'POST'])
+def index():
+    mensagem = None
+    if request.method == 'POST':
+        identificador = request.form.get('identificador', '').strip()
+        quantidade = int(request.form.get('quantidade', 1))
+        forma_pagamento = request.form.get('forma_pagamento', 'Dinheiro')
 
-    conn = conectar_banco()
-    cur = conn.cursor()
+        conn = conectar_banco()
+        cur = conn.cursor()
+        try:
+            # Envia a baixa diretamente para o Neon na tabela 'produto'
+            if identificador.isdigit():
+                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
+            else:
+                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
+            
+            conn.commit()
+            mensagem = f"Venda registrada com sucesso no Neon! ({quantidade}x - {forma_pagamento})"
+        except Exception as e:
+            conn.rollback()
+            mensagem = f"Erro ao registrar no banco: {e}"
+        finally:
+            cur.close()
+            conn.close()
 
-    try:
-        # Aqui a gente abate do estoque na venda
-        if identificador.isdigit():
-            cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
-        else:
-            cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
-        
-        conn.commit()
-        # Por enquanto, redireciona de volta para o caixa com sucesso
-        return render_template_string(HTML_CAIXA) # Ou podemos exibir uma mensagem de sucesso na tela
-    except Exception as e:
-        conn.rollback()
-        return f"Erro ao registrar venda: {e}"
-    finally:
-        cur.close()
-        conn.close()
+    return render_template_string(HTML_CAIXA)
 
 
 @app.route('/buscar_produto')
