@@ -47,7 +47,11 @@ HTML_CAIXA = """
         <form id="formVenda" method="POST" action="/registrar_venda">
             <label for="identificador">ID ou Código de Barras do Produto:</label>
             <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
-
+            <select name="forma_pagamento">
+    <option value="Dinheiro">Dinheiro</option>
+    <option value="Cartao">Cartão</option>
+    <option value="Pix">Pix</option>
+</select>
             <div class="info-box">
                 <div class="info-row">
                     <span>Produto:</span>
@@ -193,96 +197,31 @@ HTML_ESTOQUE = """
 </html>
 """
 
-@app.route('/')
-def home():
-    return render_template_string(HTML_CAIXA)
+@app.route('/registrar_venda', methods=['POST'])
+def registrar_venda():
+    # Pega os dados que vieram do formulário da sua página HTML
+    identificador = request.form.get('identificador', '').strip()
+    quantidade = int(request.form.get('quantidade', 1))
+    forma_pgto = request.form.get('forma_pagamento', 'Dinheiro') # Pega do formulário
 
-@app.route('/buscar_produto', methods=['GET'])
-def buscar_produto():
-    q = request.args.get('q', '').strip()
-    if not q:
-        return jsonify({'sucesso': False})
-
-    db_url = os.environ.get('DATABASE_URL', f"postgresql://{USUARIO}:{SENHA}@{HOST}:{PORTA}/{BANCO}")
+    # Conecta no seu banco Neon
+    db_url = os.environ.get('DATABASE_URL') 
     conn = psycopg2.connect(db_url)
     cur = conn.cursor()
 
-    if q.isdigit():
-        cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTOS} WHERE id = %s OR codigo_barra = %s", (int(q), q))
-    else:
-        cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTOS} WHERE codigo_barra = %s", (q,))
-
-    prod = cur.fetchone()
-    cur.close()
-    conn.close()
-
-    if prod:
-        return jsonify({'sucesso': True, 'nome': prod[0], 'preco': float(prod[1])})
-    return jsonify({'sucesso': False})
-
-@app.route('/registrar_venda', methods=['POST'])
-def registrar_venda():
     try:
-        identificador = request.form.get('identificador', '').strip()
-        quantidade = int(request.form.get('quantidade', 1))
-
-        db_url = os.environ.get('DATABASE_URL', f"postgresql://{USUARIO}:{SENHA}@{HOST}:{PORTA}/{BANCO}")
-        conn = psycopg2.connect(db_url)
-        cur = conn.cursor()
-
-        if identificador.isdigit():
-            cur.execute(
-                f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque - %s WHERE id = %s OR codigo_barra = %s",
-                (quantidade, int(identificador), identificador)
-            )
-        else:
-            cur.execute(
-                f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque - %s WHERE codigo_barra = %s",
-                (quantidade, identificador)
-            )
-
+        # Chama a procedure que você acabou de criar no SQL Editor do Neon
+        cur.execute(
+            "CALL registrar_venda_completa(%s, %s, %s);", 
+            (identificador, quantidade, forma_pgto)
+        )
         conn.commit()
-        cur.close()
-        conn.close()
-
-        return render_template_string(HTML_CAIXA, msg="Venda concluída com sucesso!")
+        mensagem = "Venda realizada com sucesso!"
     except Exception as e:
-        return render_template_string(HTML_CAIXA, erro=f"Erro ao registrar venda: {e}")
-
-@app.route('/estoque/entrada', methods=['GET', 'POST'])
-def entrada_estoque():
-    mensagem = None
-
-    if request.method == 'POST':
-        identificador = request.form.get('identificador', '').strip()
-        quantidade = int(request.form.get('quantidade', 0))
-
-        db_url = os.environ.get('DATABASE_URL', f"postgresql://{USUARIO}:{SENHA}@{HOST}:{PORTA}/{BANCO}")
-        conn = psycopg2.connect(db_url)
-        cur = conn.cursor()
-
-        if identificador.isdigit():
-            cur.execute(
-                f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque + %s WHERE id = %s OR codigo_barra = %s",
-                (quantidade, int(identificador), identificador)
-            )
-        else:
-            cur.execute(
-                f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque + %s WHERE codigo_barra = %s",
-                (quantidade, identificador)
-            )
-
-        conn.commit()
-
-        if cur.rowcount > 0:
-            mensagem = f"Sucesso! Adicionadas {quantidade} unidades ao estoque."
-        else:
-            mensagem = "Erro: Nenhum produto foi encontrado com esse ID ou Código de Barras!"
-
+        conn.rollback()
+        mensagem = f"Erro: {e}"
+    finally:
         cur.close()
         conn.close()
 
-    return render_template_string(HTML_ESTOQUE, msg=mensagem)
-
-if __name__ == '__main__':
-    app.run(debug=True)
+    return render_template_string(HTML_CAIXA, msg=mensagem)
