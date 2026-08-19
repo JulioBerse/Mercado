@@ -12,7 +12,7 @@ USUARIO = "postgres"
 SENHA = "j"
 
 # NOME DA TABELA NO POSTGRESQL (Ajustado para 'produtos')
-TABELA_PRODUTOS = "produtos"
+TABELA_PRODUTOS = "produto"
 
 HTML_CAIXA = """
 <!DOCTYPE html>
