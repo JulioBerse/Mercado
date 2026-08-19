@@ -15,86 +15,167 @@ HTML_CAIXA = """
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-    
     <meta charset="UTF-8">
     <title>Berse Supermercados - PDV</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f4f9; }
-        .container { max-width: 600px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
-        button { margin-top: 15px; width: 100%; padding: 10px; background-color: #007bff; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
-        .nav-link { display: inline-block; margin-bottom: 15px; color: #28a745; text-decoration: none; font-weight: bold; }
-        .msg { margin-top: 15px; padding: 10px; background: #e2e3e5; border-radius: 4px; }
-    </style>
-</head>
-<body>
-    <div class="container">
-        <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
-        <h1>Frente de Caixa (PDV)</h1>
-        <form method="POST" action="/registrar_venda">
-            <label for="codigo_barra">Código de Barras:</label>
-            <input type="text" id="codigo_barra" name="codigo_barra" required>
-
-            <label for="quantidade">Quantidade:</label>
-            <input type="number" id="quantidade" name="quantidade" value="1" required min="1">
-
-            <button type="submit">Registrar Venda</button>
-        </form>
-
-        {% if erro %}
-            <div class="msg" style="color: red;">{{ erro }}</div>
-        {% endif %}
-    </div>
-</body>
-</html>
-"""
-
-HTML_ESTOQUE = """
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Entrada de Estoque - Berse Supermercados</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; background-color: #f0f2f5; display: flex; justify-content: center; }
-        .card { background: #ffffff; width: 100%; max-width: 500px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 30px; background-color: #f0f2f5; display: flex; justify-content: center; }
+        .card { background: #ffffff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
         label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
         input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
-        input:focus { border-color: #28a745; outline: none; }
-        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        button:hover { background-color: #218838; }
-        .msg { margin-top: 20px; padding: 12px; background: #e8f5e9; color: #2e7d32; border-radius: 6px; font-weight: bold; text-align: center; }
-        .btn-voltar { display: inline-block; margin-top: 20px; color: #007bff; text-decoration: none; font-weight: 600; }
-        .btn-voltar:hover { text-decoration: underline; }
+        input:focus { border-color: #007bff; outline: none; }
+        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #0056b3; }
+        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px; }
+        .info-row strong { color: #333; }
+        .total-box { font-size: 20px; color: #28a745; border-top: 2px solid #28a745; padding-top: 10px; margin-top: 10px; }
+        .msg { margin-top: 20px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; }
+        .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
+        .msg-erro { background: #ffebee; color: #c62828; }
+        .nav-link { display: inline-block; margin-bottom: 15px; color: #28a745; text-decoration: none; font-weight: bold; }
     </style>
 </head>
 <body>
     <div class="card">
-        <h1>📦 Entrada de Estoque</h1>
-        <form method="POST">
-            <label for="codigo_barra">Código de Barras do Produto:</label>
-            <input type="text" id="codigo_barra" name="codigo_barra" placeholder="Ex: 7891234567890" required autofocus>
+        <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
+        <h1>🛒 Frente de Caixa (PDV)</h1>
 
-            <label for="quantidade">Quantidade a Adicionar:</label>
-            <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 10" required min="1">
+        <form method="POST" action="/registrar_venda">
+            <label for="identificador">ID ou Código de Barras do Produto:</label>
+            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID ou bipador de código" required autofocus oninput="buscarProduto()">
 
-            <button type="submit">Atualizar Estoque</button>
+            <div class="info-box">
+                <div class="info-row">
+                    <span>Produto:</span>
+                    <strong id="nome_produto">Aguardando busca...</strong>
+                </div>
+                <div class="info-row">
+                    <span>Valor Unitário:</span>
+                    <strong id="valor_unitario">R$ 0,00</strong>
+                </div>
+            </div>
+
+            <label for="quantidade">Quantidade:</label>
+            <input type="number" id="quantidade" name="quantidade" value="1" min="1" required oninput="calcularTotal()">
+
+            <div class="info-box total-box">
+                <div class="info-row">
+                    <span>VALOR TOTAL:</span>
+                    <strong id="valor_total">R$ 0,00</strong>
+                </div>
+            </div>
+
+            <button type="submit">Finalizar Venda</button>
         </form>
 
         {% if msg %}
-            <div class="msg">{{ msg }}</div>
+            <div class="msg msg-sucesso">{{ msg }}</div>
         {% endif %}
-
-        <a class="btn-voltar" href="/">← Voltar para o PDV (Frente de Caixa)</a>
+        {% if erro %}
+            <div class="msg msg-erro">{{ erro }}</div>
+        {% endif %}
     </div>
+
+    <script>
+        let precoUnitarioAtual = 0;
+
+        async function buscarProduto() {
+            const identificador = document.getElementById('identificador').value.trim();
+            if (!identificador) {
+                resetarCampos();
+                return;
+            }
+
+            try {
+                const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
+                const data = await response.json();
+
+                if (data.sucesso) {
+                    document.getElementById('nome_produto').innerText = data.nome;
+                    precoUnitarioAtual = parseFloat(data.preco);
+                    document.getElementById('valor_unitario').innerText = 'R$ ' + precoUnitarioAtual.toFixed(2).replace('.', ',');
+                    calcularTotal();
+                } else {
+                    document.getElementById('nome_produto').innerText = 'Produto não encontrado';
+                    document.getElementById('valor_unitario').innerText = 'R$ 0,00';
+                    precoUnitarioAtual = 0;
+                    calcularTotal();
+                }
+            } catch (e) {
+                resetarCampos();
+            }
+        }
+
+        function calcularTotal() {
+            const qtd = parseInt(document.getElementById('quantidade').value) || 0;
+            const total = precoUnitarioAtual * qtd;
+            document.getElementById('valor_total').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
+        }
+
+        function resetarCampos() {
+            document.getElementById('nome_produto').innerText = 'Aguardando busca...';
+            document.getElementById('valor_unitario').innerText = 'R$ 0,00';
+            document.getElementById('valor_total').innerText = 'R$ 0,00';
+            precoUnitarioAtual = 0;
+        }
+    </script>
 </body>
 </html>
 """
 
+@app.route('/buscar_produto', methods=['GET'])
+def buscar_produto():
+    q = request.args.get('q', '').strip()
+    if not q:
+        return jsonify({'sucesso': False})
+
+    db_url = os.environ.get('DATABASE_URL', f"postgresql://{USUARIO}:{SENHA}@{HOST}:{PORTA}/{BANCO}")
+    conn = psycopg2.connect(db_url)
+    cur = conn.cursor()
+
+    if q.isdigit():
+        cur.execute("SELECT nome, preco FROM produto WHERE id = %s OR codigo_barra = %s", (int(q), q))
+    else:
+        cur.execute("SELECT nome, preco FROM produto WHERE codigo_barra = %s", (q,))
+
+    prod = cur.fetchone()
+    cur.close()
+    conn.close()
+
+    if prod:
+        return jsonify({'sucesso': True, 'nome': prod[0], 'preco': float(prod[1])})
+    return jsonify({'sucesso': False})
+
+@app.route('/registrar_venda', methods=['POST'])
+def registrar_venda():
+    try:
+        identificador = request.form.get('identificador', '').strip()
+        quantidade = int(request.form.get('quantidade', 1))
+
+        db_url = os.environ.get('DATABASE_URL', f"postgresql://{USUARIO}:{SENHA}@{HOST}:{PORTA}/{BANCO}")
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
+
+        if identificador.isdigit():
+            cur.execute(
+                "UPDATE produto SET estoque = estoque - %s WHERE id = %s OR codigo_barra = %s",
+                (quantidade, int(identificador), identificador)
+            )
+        else:
+            cur.execute(
+                "UPDATE produto SET estoque = estoque + %s WHERE codigo_barra = %s",
+                (quantidade, identificador)
+            )
+
+        conn.commit()
+        cur.close()
+        conn.close()
+
+        return render_template_string(HTML_CAIXA, msg="Venda concluída com sucesso!")
+    except Exception as e:
+        return render_template_string(HTML_CAIXA, erro=f"Erro ao registrar venda: {e}")
+    
 @app.route('/')
 def home():
     return render_template_string(HTML_CAIXA)
