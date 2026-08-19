@@ -245,6 +245,33 @@ HTML_ESTOQUE = """
 def index():
     return render_template_string(HTML_CAIXA)
 
+@app.route('/registrar_venda', methods=['POST'])
+def registrar_venda():
+    identificador = request.form.get('identificador', '').strip()
+    quantidade = int(request.form.get('quantidade', 1))
+    forma_pagamento = request.form.get('forma_pagamento', 'Dinheiro')
+
+    conn = conectar_banco()
+    cur = conn.cursor()
+
+    try:
+        # Aqui a gente abate do estoque na venda
+        if identificador.isdigit():
+            cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
+        else:
+            cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
+        
+        conn.commit()
+        # Por enquanto, redireciona de volta para o caixa com sucesso
+        return render_template_string(HTML_CAIXA) # Ou podemos exibir uma mensagem de sucesso na tela
+    except Exception as e:
+        conn.rollback()
+        return f"Erro ao registrar venda: {e}"
+    finally:
+        cur.close()
+        conn.close()
+
+
 @app.route('/buscar_produto')
 def buscar_produto():
     q = request.args.get('q', '').strip()
