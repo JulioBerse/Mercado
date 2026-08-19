@@ -47,7 +47,7 @@ HTML_CAIXA = """
     <div class="card">
         <!-- LOGOMARCA / CABEÇALHO -->
         <div class="brand-header">
-            <h2>🏪 BERSE SUPERMERCADOS</h2>
+            <h2>🏪 GRUPO YAMASAKI</h2>
         </div>
 
         <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
@@ -195,7 +195,7 @@ HTML_ESTOQUE = """
     <div class="card">
         <!-- LOGOMARCA / CABEÇALHO -->
         <div class="brand-header">
-            <h2>🏪 BERSE SUPERMERCADOS</h2>
+            <h2>🏪 GRUPO YAMASAKI</h2>
         </div>
 
         <h1>📦 Entrada de Estoque</h1>
