@@ -248,29 +248,36 @@ HTML_ESTOQUE = """
 def index():
     return render_template_string(HTML_CAIXA)
 
-@app.route('/buscar_produto')
-def buscar_produto():
-    q = request.args.get('q', '').strip()
-    conn = conectar_banco()
-    cur = conn.cursor()
-    try:
-        if q.isdigit():
-            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s;", (int(q),))
-        else:
-            # CORRIGIDO DE codigo_barras PARA codigo_barra
-            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (q,))
-        
-        produto = cur.fetchone()
-        if produto:
-            return jsonify({'sucesso': True, 'nome': produto[0], 'preco': float(produto[1]), 'estoque': produto[2]})
-        else:
-            return jsonify({'sucesso': False})
-    except Exception as e:
-        return jsonify({'sucesso': False, 'erro': str(e)})
-    finally:
-        cur.close()
-        conn.close()
+<script>
+        const inputId = document.getElementById('identificador');
+        const inputNome = document.getElementById('nome_display');
+        const inputQtd = document.getElementById('quantidade');
 
+        inputId.addEventListener('blur', function() {
+            const valor = inputId.value.trim();
+            if (!valor) return;
+
+            // TESTE VISUAL: Vai abrir uma caixinha na tela mostrando o que foi digitado
+            alert("Buscando pelo valor: " + valor);
+
+            fetch(`/api/produto/${valor}`)
+                .then(response => response.json())
+                .then(data => {
+                    console.log("Resposta da API:", data);
+                    if (data.encontrado) {
+                        inputNome.value = data.nome;
+                        inputQtd.focus();
+                    } else {
+                        inputNome.value = "Produto não encontrado!";
+                        inputId.focus();
+                    }
+                })
+                .catch(err => {
+                    console.error("Erro no fetch:", err);
+                    inputNome.value = "Erro de conexão";
+                });
+        });
+    </script>
 @app.route('/api/produto/<identificador>')
 def api_produto(identificador):
     conn = conectar_banco()
