@@ -276,17 +276,23 @@ def api_produto(identificador):
     conn = conectar_banco()
     cur = conn.cursor()
     try:
+        # Vamos imprimir no terminal do VS Code o que o Flask recebeu
+        print(f"--- BUSCANDO PRODUTO: '{identificador}' ---")
+        
         if identificador.isdigit():
             cur.execute(f"SELECT nome_produto FROM {TABELA_PRODUTOS} WHERE id = %s;", (int(identificador),))
         else:
             cur.execute(f"SELECT nome_produto FROM {TABELA_PRODUTOS} WHERE codigo_barras = %s;", (identificador,))
         
         produto = cur.fetchone()
+        print(f"Resultado do banco: {produto}")
+        
         if produto:
             return jsonify({'encontrado': True, 'nome': produto[0]})
         else:
             return jsonify({'encontrado': False})
-    except:
+    except Exception as e:
+        print(f"ERRO NA API: {e}")
         return jsonify({'encontrado': False})
     finally:
         cur.close()
