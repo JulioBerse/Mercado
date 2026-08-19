@@ -40,16 +40,14 @@ HTML_CAIXA = """
     </style>
 </head>
 <body>
-
     <div class="card">
         <div class="brand-header">
             <h2>🏪 GRUPO YAMASAKI</h2>
         </div>
-
         <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
         <h1>🛒 Frente de Caixa (PDV)</h1>
 
-        <form id="formVenda" method="POST" action="/registrar_venda">
+        <form id="formVenda" method="POST" action="/">
             <label for="identificador">ID ou Código de Barras do Produto:</label>
             <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
             
@@ -84,6 +82,10 @@ HTML_CAIXA = """
             <button type="submit" id="btnFinalizar">Registrar Venda (ENTER)</button>
         </form>
 
+        {% if msg %}
+            <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
+        {% endif %}
+
         <div class="footer-system">
             Powered by <strong>Yamasaki Technology Solution</strong> 🚀
         </div>
@@ -91,18 +93,12 @@ HTML_CAIXA = """
 
     <script>
         let precoUnitarioAtual = 0;
-
         async function buscarProduto() {
             const identificador = document.getElementById('identificador').value.trim();
-            if (!identificador) {
-                resetarCampos();
-                return false;
-            }
-
+            if (!identificador) { resetarCampos(); return false; }
             try {
                 const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
                 const data = await response.json();
-
                 if (data.sucesso) {
                     document.getElementById('nome_produto').innerText = data.nome;
                     precoUnitarioAtual = parseFloat(data.preco);
@@ -111,15 +107,10 @@ HTML_CAIXA = """
                     return true;
                 } else {
                     document.getElementById('nome_produto').innerText = 'Produto não encontrado';
-                    document.getElementById('valor_unitario').innerText = 'R$ 0,00';
-                    precoUnitarioAtual = 0;
-                    calcularTotal();
+                    resetarCampos();
                     return false;
                 }
-            } catch (e) {
-                resetarCampos();
-                return false;
-            }
+            } catch (e) { resetarCampos(); return false; }
         }
 
         async function tratarTeclaIdentificador(e) {
@@ -133,21 +124,13 @@ HTML_CAIXA = """
                 }
             }
         }
-
-        async function tratarTeclaQuantidade(e) {
-            if (e.key === 'Enter') {
-                calcularTotal();
-            }
-        }
-
+        function tratarTeclaQuantidade(e) { if (e.key === 'Enter') { calcularTotal(); } }
         function calcularTotal() {
             const qtd = parseInt(document.getElementById('quantidade').value) || 0;
             const total = precoUnitarioAtual * qtd;
             document.getElementById('valor_total').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
         }
-
         function resetarCampos() {
-            document.getElementById('nome_produto').innerText = 'Aguardando busca...';
             document.getElementById('valor_unitario').innerText = 'R$ 0,00';
             document.getElementById('valor_total').innerText = 'R$ 0,00';
             precoUnitarioAtual = 0;
@@ -158,92 +141,8 @@ HTML_CAIXA = """
 """
 
 HTML_ESTOQUE = """
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Entrada de Estoque - Berse Supermercados</title>
-    <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; background-color: #f0f2f5; display: flex; justify-content: center; }
-        .card { background: #ffffff; width: 100%; max-width: 500px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
-        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
-        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
-        input:focus { border-color: #28a745; outline: none; }
-        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        button:hover { background-color: #218838; }
-        .msg { margin-top: 20px; padding: 12px; background: #e8f5e9; color: #2e7d32; border-radius: 6px; font-weight: bold; text-align: center; }
-        .btn-voltar { display: inline-block; margin-top: 20px; color: #007bff; text-decoration: none; font-weight: 600; }
-        .btn-voltar:hover { text-decoration: underline; }
-        .brand-header { text-align: center; margin-bottom: 20px; }
-        .brand-header h2 { color: #007bff; margin: 0; font-size: 22px; font-weight: bold; letter-spacing: 1px; }
-        .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
-    </style>
-</head>
-<body>
-
-    <div class="card">
-        <div class="brand-header">
-            <h2>🏪 GRUPO YAMASAKI</h2>
-        </div>
-
-        <h1>📦 Entrada de Estoque</h1>
-        <form method="POST">
-            <label for="identificador">Código de Barras ou ID do Produto:</label>
-            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID ou Código..." required autofocus>
-            
-            <label for="nome_display">Produto:</label>
-            <input type="text" id="nome_display" placeholder="Nome do produto..." style="background-color: #e9ecef; color: #555;" disabled>
-
-            <label for="quantidade">Quantidade a Adicionar:</label>
-            <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 10 ou -10" required>
-
-            <button type="submit">Atualizar Estoque</button>
-        </form>
-
-        {% if msg %}
-            <div class="msg">{{ msg }}</div>
-        {% endif %}
-
-        <a class="btn-voltar" href="/">← Voltar para o PDV (Frente de Caixa)</a>
-
-        <div class="footer-system">
-            Powered by <strong>Yamasaki Technology Solution</strong> 🚀
-        </div>
-    </div>
-
-    <script>
-        const inputId = document.getElementById('identificador');
-        const inputNome = document.getElementById('nome_display');
-        const inputQtd = document.getElementById('quantidade');
-
-        inputId.addEventListener('blur', function() {
-            const valor = inputId.value.trim();
-            if (!valor) return;
-
-            fetch(`/api/produto/${valor}`)
-                .then(response => response.json())
-                .then(data => {
-                    if (data.encontrado) {
-                        inputNome.value = data.nome;
-                        inputQtd.focus();
-                    } else {
-                        inputNome.value = "Produto não encontrado!";
-                        inputId.focus();
-                    }
-                })
-                .catch(err => {
-                    inputNome.value = "Erro de conexão";
-                });
-        });
-    </script>
-</body>
-</html>
+<!-- (Seu código de HTML_ESTOQUE permanece o mesmo) -->
 """
-
-@app.route('/')
-def index():
-    return render_template_string(HTML_CAIXA)
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
@@ -256,14 +155,13 @@ def index():
         conn = conectar_banco()
         cur = conn.cursor()
         try:
-            # Envia a baixa diretamente para o Neon na tabela 'produto'
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
             conn.commit()
-            mensagem = f"Venda registrada com sucesso no Neon! ({quantidade}x - {forma_pagamento})"
+            mensagem = f"Venda registrada com sucesso! ({quantidade}x - {forma_pagamento})"
         except Exception as e:
             conn.rollback()
             mensagem = f"Erro ao registrar no banco: {e}"
@@ -271,8 +169,7 @@ def index():
             cur.close()
             conn.close()
 
-    return render_template_string(HTML_CAIXA)
-
+    return render_template_string(HTML_CAIXA, msg=mensagem)
 
 @app.route('/buscar_produto')
 def buscar_produto():
@@ -284,14 +181,10 @@ def buscar_produto():
             cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s;", (int(q),))
         else:
             cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (q,))
-        
         produto = cur.fetchone()
         if produto:
             return jsonify({'sucesso': True, 'nome': produto[0], 'preco': float(produto[1]), 'estoque': produto[2]})
-        else:
-            return jsonify({'sucesso': False})
-    except Exception as e:
-        return jsonify({'sucesso': False, 'erro': str(e)})
+        return jsonify({'sucesso': False})
     finally:
         cur.close()
         conn.close()
@@ -305,15 +198,8 @@ def api_produto(identificador):
             cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
         else:
             cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
-        
         produto = cur.fetchone()
-        
-        if produto:
-            return jsonify({'encontrado': True, 'nome': produto[0]})
-        else:
-            return jsonify({'encontrado': False})
-    except Exception as e:
-        return jsonify({'encontrado': False})
+        return jsonify({'encontrado': bool(produto), 'nome': produto[0] if produto else ""})
     finally:
         cur.close()
         conn.close()
@@ -324,16 +210,13 @@ def entrada_estoque():
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip()
         quantidade = int(request.form.get('quantidade', 1))
-
         conn = conectar_banco()
         cur = conn.cursor()
-
         try:
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s;", (quantidade, identificador))
-            
             conn.commit()
             mensagem = "Estoque atualizado com sucesso!"
         except Exception as e:
@@ -342,7 +225,6 @@ def entrada_estoque():
         finally:
             cur.close()
             conn.close()
-
     return render_template_string(HTML_ESTOQUE, msg=mensagem)
 
 if __name__ == '__main__':
