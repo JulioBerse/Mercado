@@ -4,15 +4,12 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# CONFIGURAÇÕES DO BANCO DE DADOS
-HOST = "localhost"
-PORTA = "5432"
-BANCO = "Mercado"
-USUARIO = "postgres"
-SENHA = "j"
-
-# NOME DA TABELA NO POSTGRESQL (Ajustado para 'produto')
+# CONFIGURAÇÕES DO BANCO DE DADOS (Mantendo a sua estrutura atual)
 TABELA_PRODUTOS = "produto"
+
+def conectar_banco():
+    db_url = os.environ.get('DATABASE_URL')
+    return psycopg2.connect(db_url)
 
 HTML_CAIXA = """
 <!DOCTYPE html>
@@ -45,7 +42,6 @@ HTML_CAIXA = """
 <body>
 
     <div class="card">
-        <!-- LOGOMARCA / CABEÇALHO -->
         <div class="brand-header">
             <h2>🏪 GRUPO YAMASAKI</h2>
         </div>
@@ -92,7 +88,6 @@ HTML_CAIXA = """
             <div class="msg {% if 'Erro' in msg %}msg-erro{% else %}msg-sucesso{% endif %}">{{ msg }}</div>
         {% endif %}
 
-        <!-- RODAPÉ INSTITUCIONAL -->
         <div class="footer-system">
             Powered by <strong>Yamasaki Technology Solution</strong> 🚀
         </div>
@@ -143,7 +138,7 @@ HTML_CAIXA = """
             }
         }
 
-        function tratarTeclaQuantidade(e) {
+        async function tratarTeclaQuantidade(e) {
             if (e.key === 'Enter') {
                 calcularTotal();
             }
@@ -193,7 +188,6 @@ HTML_ESTOQUE = """
 <body>
 
     <div class="card">
-        <!-- LOGOMARCA / CABEÇALHO -->
         <div class="brand-header">
             <h2>🏪 GRUPO YAMASAKI</h2>
         </div>
@@ -201,8 +195,11 @@ HTML_ESTOQUE = """
         <h1>📦 Entrada de Estoque</h1>
         <form method="POST">
             <label for="identificador">Código de Barras ou ID do Produto:</label>
-            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID (ex: 5) ou Código (ex: 789123...)" required autofocus>
-            <div class="hint">* Digite apenas o ID numérico ou o Código de Barras completo.</div>
+            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID ou Código..." required autofocus>
+            
+            <!-- CAMPO DO NOME ADICIONADO CORRETAMENTE -->
+            <label for="nome_display">Produto:</label>
+            <input type="text" id="nome_display" placeholder="Nome aparecerá aqui..." style="background-color: #e9ecef; color: #555;" disabled>
 
             <label for="quantidade">Quantidade a Adicionar:</label>
             <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 10" required min="1">
@@ -216,48 +213,34 @@ HTML_ESTOQUE = """
 
         <a class="btn-voltar" href="/">← Voltar para o PDV (Frente de Caixa)</a>
 
-        <!-- RODAPÉ INSTITUCIONAL -->
         <div class="footer-system">
             Powered by <strong>Yamasaki Technology Solution</strong> 🚀
         </div>
     </div>
-    <form method="POST">
-            <label for="identificador">Código de Barras ou ID do Produto:</label>
-            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID ou Código..." required autofocus>
-            
-            <!-- NOVO CAMPO -->
-            <label for="nome_display">Produto:</label>
-            <input type="text" id="nome_display" placeholder="Nome aparecerá aqui..." style="background-color: #e9ecef; color: #555;" disabled>
 
-            <label for="quantidade">Quantidade a Adicionar:</label>
-            <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 10" required min="1">
+    <!-- SCRIPT PARA BUSCA AUTOMÁTICA NO ESTOQUE -->
+    <script>
+        const inputId = document.getElementById('identificador');
+        const inputNome = document.getElementById('nome_display');
+        const inputQtd = document.getElementById('quantidade');
 
-            <button type="submit">Atualizar Estoque</button>
-        </form>
+        inputId.addEventListener('blur', function() {
+            const valor = inputId.value.trim();
+            if (!valor) return;
 
-        <!-- SCRIPT PARA BUSCA AUTOMÁTICA -->
-        <script>
-            const inputId = document.getElementById('identificador');
-            const inputNome = document.getElementById('nome_display');
-            const inputQtd = document.getElementById('quantidade');
-
-            inputId.addEventListener('blur', function() {
-                const valor = inputId.value;
-                if (!valor) return;
-
-                fetch(`/api/produto/${valor}`)
-                    .then(response => response.json())
-                    .then(data => {
-                        if (data.encontrado) {
-                            inputNome.value = data.nome;
-                            inputQtd.focus();
-                        } else {
-                            inputNome.value = "Produto não encontrado!";
-                            inputId.focus();
-                        }
-                    });
-            });
-        </script>
+            fetch(`/api/produto/${valor}`)
+                .then(response => response.json())
+                .then(data => {
+                    if (data.encontrado) {
+                        inputNome.value = data.nome;
+                        inputQtd.focus();
+                    } else {
+                        inputNome.value = "Produto não encontrado!";
+                        inputId.focus();
+                    }
+                });
+        });
+    </script>
 </body>
 </html>
 """
@@ -266,6 +249,49 @@ HTML_ESTOQUE = """
 def index():
     return render_template_string(HTML_CAIXA)
 
+@app.route('/buscar_produto')
+def buscar_produto():
+    q = request.args.get('q', '').strip()
+    conn = conectar_banco()
+    cur = conn.cursor()
+    try:
+        if q.isdigit():
+            cur.execute(f"SELECT nome_produto, preco, estoque FROM {TABELA_PRODUTOS} WHERE id = %s;", (int(q),))
+        else:
+            cur.execute(f"SELECT nome_produto, preco, estoque FROM {TABELA_PRODUTOS} WHERE codigo_barras = %s;", (q,))
+        
+        produto = cur.fetchone()
+        if produto:
+            return jsonify({'sucesso': True, 'nome': produto[0], 'preco': float(produto[1]), 'estoque': produto[2]})
+        else:
+            return jsonify({'sucesso': False})
+    except Exception as e:
+        return jsonify({'sucesso': False, 'erro': str(e)})
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route('/api/produto/<identificador>')
+def api_produto(identificador):
+    conn = conectar_banco()
+    cur = conn.cursor()
+    try:
+        if identificador.isdigit():
+            cur.execute(f"SELECT nome_produto FROM {TABELA_PRODUTOS} WHERE id = %s;", (int(identificador),))
+        else:
+            cur.execute(f"SELECT nome_produto FROM {TABELA_PRODUTOS} WHERE codigo_barras = %s;", (identificador,))
+        
+        produto = cur.fetchone()
+        if produto:
+            return jsonify({'encontrado': True, 'nome': produto[0]})
+        else:
+            return jsonify({'encontrado': False})
+    except:
+        return jsonify({'encontrado': False})
+    finally:
+        cur.close()
+        conn.close()
+
 @app.route('/estoque/entrada', methods=['GET', 'POST'])
 def entrada_estoque():
     mensagem = None
@@ -273,16 +299,13 @@ def entrada_estoque():
         identificador = request.form.get('identificador', '').strip()
         quantidade = int(request.form.get('quantidade', 1))
 
-        db_url = os.environ.get('DATABASE_URL')
-        conn = psycopg2.connect(db_url)
+        conn = conectar_banco()
         cur = conn.cursor()
 
         try:
             if identificador.isdigit():
-                # AQUI MUDOU DE 'quantidade' PARA 'estoque'
                 cur.execute(f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque + %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
-                # AQUI TAMBÉM MUDOU DE 'quantidade' PARA 'estoque'
                 cur.execute(f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque + %s WHERE codigo_barras = %s;", (quantidade, identificador))
             
             conn.commit()
@@ -295,34 +318,6 @@ def entrada_estoque():
             conn.close()
 
     return render_template_string(HTML_ESTOQUE, msg=mensagem)
-    from flask import jsonify
 
-# Rota para buscar o produto via JavaScript (AJAX)
-@app.route('/api/produto/<int:produto_id>')
-def api_produto(produto_id):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    cur.execute('SELECT nome_produto FROM produtos WHERE id = %s;', (produto_id,))
-    produto = cur.fetchone()
-    cur.close()
-    conn.close()
-    
-    if produto:
-        return jsonify({'encontrado': True, 'nome': produto[0]})
-    else:
-        return jsonify({'encontrado': False, 'nome': 'Produto não encontrado'})
-        @app.route('/api/produto/<identificador>')
-def api_produto(identificador):
-    conn = get_db_connection()
-    cur = conn.cursor()
-    # Busca pelo ID ou pelo código de barras
-    cur.execute('SELECT nome_produto FROM produtos WHERE id = %s OR codigo_barras = %s;', (identificador, identificador))
-    produto = cur.fetchone()
-    cur.close()
-    conn.close()
-    
-    if produto:
-        return jsonify({'encontrado': True, 'nome': produto[0]})
-    else:
-        return jsonify({'encontrado': False, 'nome': 'Produto não encontrado'})
-
+if __name__ == '__main__':
+    app.run(debug=True)
