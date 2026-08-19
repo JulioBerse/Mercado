@@ -43,15 +43,7 @@ HTML_CAIXA = """
     </style>
 </head>
 <body>
-    <!-- No topo do card, logo abaixo da abertura da div .card -->
-<div class="brand-header">
-    <h2>🏪 BERSE SUPERMERCADOS</h2>
-</div>
 
-<!-- E no rodapé do card, logo antes de fechar a div .card -->
-<div class="footer-system">
-    Powered by <strong>Yamasaki Technology Solution</strong> 🚀
-</div>
     <div class="card">
         <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
         <h1>🛒 Frente de Caixa (PDV)</h1>
@@ -189,15 +181,7 @@ HTML_ESTOQUE = """
     </style>
 </head>
 <body>
-    <!-- No topo do card, logo abaixo da abertura da div .card -->
-<div class="brand-header">
-    <h2>🏪 BERSE SUPERMERCADOS</h2>
-</div>
 
-<!-- E no rodapé do card, logo antes de fechar a div .card -->
-<div class="footer-system">
-    Powered by <strong>Yamasaki Technology Solution</strong> 🚀
-</div>
     <div class="card">
         <h1>📦 Entrada de Estoque</h1>
         <form method="POST">
