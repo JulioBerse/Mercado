@@ -4,15 +4,15 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# NOME DA TABELA NO POSTGRESQL (Ajustado para 'produtos')
-TABELA_PRODUTOS = "produtos"
-
 # CONFIGURAÇÕES DO BANCO DE DADOS
 HOST = "localhost"
 PORTA = "5432"
 BANCO = "Mercado"
 USUARIO = "postgres"
 SENHA = "j"
+
+# NOME DA TABELA NO POSTGRESQL (Ajustado para 'produtos')
+TABELA_PRODUTOS = "produtos"
 
 HTML_CAIXA = """
 <!DOCTYPE html>
@@ -46,7 +46,7 @@ HTML_CAIXA = """
 
         <form id="formVenda" method="POST" action="/registrar_venda">
             <label for="identificador">ID ou Código de Barras do Produto:</label>
-            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB" required autofocus oninput="buscarProduto()" onchange="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
+            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
 
             <div class="info-box">
                 <div class="info-row">
@@ -60,7 +60,7 @@ HTML_CAIXA = """
             </div>
 
             <label for="quantidade">Quantidade:</label>
-            <input type="number" id="quantidade" name="quantidade" value="1" min="1" required oninput="calcularTotal()">
+            <input type="number" id="quantidade" name="quantidade" value="1" min="1" required oninput="calcularTotal()" onkeydown="tratarTeclaQuantidade(event)">
 
             <div class="info-box total-box">
                 <div class="info-row">
@@ -87,7 +87,7 @@ HTML_CAIXA = """
             const identificador = document.getElementById('identificador').value.trim();
             if (!identificador) {
                 resetarCampos();
-                return;
+                return false;
             }
 
             try {
@@ -99,20 +99,35 @@ HTML_CAIXA = """
                     precoUnitarioAtual = parseFloat(data.preco);
                     document.getElementById('valor_unitario').innerText = 'R$ ' + precoUnitarioAtual.toFixed(2).replace('.', ',');
                     calcularTotal();
+                    return true;
                 } else {
                     document.getElementById('nome_produto').innerText = 'Produto não encontrado';
                     document.getElementById('valor_unitario').innerText = 'R$ 0,00';
                     precoUnitarioAtual = 0;
                     calcularTotal();
+                    return false;
                 }
             } catch (e) {
                 resetarCampos();
+                return false;
             }
         }
 
-        function tratarTeclaIdentificador(e) {
+        async function tratarTeclaIdentificador(e) {
             if (e.key === 'Enter' || e.key === 'Tab') {
-                buscarProduto();
+                e.preventDefault();
+                const achou = await buscarProduto();
+                if (achou) {
+                    const campoQtd = document.getElementById('quantidade');
+                    campoQtd.focus();
+                    campoQtd.select();
+                }
+            }
+        }
+
+        function tratarTeclaQuantidade(e) {
+            if (e.key === 'Enter') {
+                calcularTotal();
             }
         }
 
@@ -193,9 +208,9 @@ def buscar_produto():
     cur = conn.cursor()
 
     if q.isdigit():
-        cur.execute("SELECT nome, preco FROM produto WHERE id = %s OR codigo_barra = %s", (int(q), q))
+        cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTOS} WHERE id = %s OR codigo_barra = %s", (int(q), q))
     else:
-        cur.execute("SELECT nome, preco FROM produto WHERE codigo_barra = %s", (q,))
+        cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTOS} WHERE codigo_barra = %s", (q,))
 
     prod = cur.fetchone()
     cur.close()
@@ -217,12 +232,12 @@ def registrar_venda():
 
         if identificador.isdigit():
             cur.execute(
-                "UPDATE produto SET estoque = estoque - %s WHERE id = %s OR codigo_barra = %s",
+                f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque - %s WHERE id = %s OR codigo_barra = %s",
                 (quantidade, int(identificador), identificador)
             )
         else:
             cur.execute(
-                "UPDATE produto SET estoque = estoque - %s WHERE codigo_barra = %s",
+                f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque - %s WHERE codigo_barra = %s",
                 (quantidade, identificador)
             )
 
@@ -248,12 +263,12 @@ def entrada_estoque():
 
         if identificador.isdigit():
             cur.execute(
-                "UPDATE produto SET estoque = estoque + %s WHERE id = %s OR codigo_barra = %s",
+                f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque + %s WHERE id = %s OR codigo_barra = %s",
                 (quantidade, int(identificador), identificador)
             )
         else:
             cur.execute(
-                "UPDATE produto SET estoque = estoque + %s WHERE codigo_barra = %s",
+                f"UPDATE {TABELA_PRODUTOS} SET estoque = estoque + %s WHERE codigo_barra = %s",
                 (quantidade, identificador)
             )
 
