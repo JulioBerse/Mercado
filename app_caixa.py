@@ -4,6 +4,9 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
+# NOME DA TABELA NO POSTGRESQL (Ajustado para 'produtos')
+TABELA_PRODUTOS = "produtos"
+
 # CONFIGURAÇÕES DO BANCO DE DADOS
 HOST = "localhost"
 PORTA = "5432"
