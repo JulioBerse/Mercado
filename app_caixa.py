@@ -205,31 +205,32 @@ HTML_ESTOQUE = """
 </html>
 """
 
-@app.route('/registrar_venda', methods=['POST'])
+@app.route('/registrar_venda', methods=['GET', 'POST'])
 def registrar_venda():
-    # Pega os dados que vieram do formulário da sua página HTML
-    identificador = request.form.get('identificador', '').strip()
-    quantidade = int(request.form.get('quantidade', 1))
-    forma_pgto = request.form.get('forma_pagamento', 'Dinheiro') # Pega do formulário
+    mensagem = None
+    # Se o usuário clicou em registrar (POST)
+    if request.method == 'POST':
+        identificador = request.form.get('identificador', '').strip()
+        quantidade = int(request.form.get('quantidade', 1))
+        forma_pgto = request.form.get('forma_pagamento', 'Dinheiro')
 
-    # Conecta no seu banco Neon
-    db_url = os.environ.get('DATABASE_URL') 
-    conn = psycopg2.connect(db_url)
-    cur = conn.cursor()
+        db_url = os.environ.get('DATABASE_URL') 
+        conn = psycopg2.connect(db_url)
+        cur = conn.cursor()
 
-    try:
-        # Chama a procedure que você acabou de criar no SQL Editor do Neon
-        cur.execute(
-            "CALL registrar_venda_completa(%s, %s, %s);", 
-            (identificador, quantidade, forma_pgto)
-        )
-        conn.commit()
-        mensagem = "Venda realizada com sucesso!"
-    except Exception as e:
-        conn.rollback()
-        mensagem = f"Erro: {e}"
-    finally:
-        cur.close()
-        conn.close()
+        try:
+            cur.execute(
+                "CALL registrar_venda_completa(%s, %s, %s);", 
+                (identificador, quantidade, forma_pgto)
+            )
+            conn.commit()
+            mensagem = "Venda realizada com sucesso!"
+        except Exception as e:
+            conn.rollback()
+            mensagem = f"Erro: {e}"
+        finally:
+            cur.close()
+            conn.close()
 
+    # Se for GET (abrir a página) ou após o POST, renderiza o HTML do caixa
     return render_template_string(HTML_CAIXA, msg=mensagem)
