@@ -89,41 +89,8 @@ HTML_LOGIN = """
 </html>
 """
 
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    erro = None
-    if request.method == 'POST':
-        login_input = request.form['login']
-        senha_input = request.form['senha']
-        
-        # Conexão com o banco Neon
-        # (Certifique-se de usar a string de conexão correta ou suas variáveis de host/user/senha)
-        conn = psycopg2.connect(
-            host=HOST, database=BANCO, user=USUARIO, password=SENHA, port=PORTA, sslmode='require'
-        )
-        cursor = conn.cursor()
-        cursor.execute("SELECT login, perfil FROM usuario WHERE login = %s AND senha = %s", (login_input, senha_input))
-        usuario = cursor.fetchone()
-        cursor.close()
-        conn.close()
-        
-        if usuario:
-            session['usuario'] = usuario[0]
-            session['perfil'] = usuario[1]
-            return redirect('/') # Redireciona para o PDV / Página Inicial
-        else:
-            erro = "Usuário ou senha inválidos!"
-            
-    return render_template_string(HTML_LOGIN, erro=erro)
-
-@app.route('/logout')
-def logout():
-    session.clear()
-    return redirect(url_for('login'))
 
 @app.route('/')
-if 'usuario' not in session:
-    return redirect(url_for('login'))
 def home():
     try:
         conexao = psycopg2.connect(
