@@ -218,6 +218,7 @@ def registrar_venda():
 @app.route('/estoque/entrada', methods=['GET', 'POST'])
 def entrada_estoque():
     mensagem = None
+
     if request.method == 'POST':
         codigo_barra = request.form.get('codigo_barra')
         quantidade = int(request.form.get('quantidade'))
@@ -240,4 +241,5 @@ def entrada_estoque():
         cur.close()
         conn.close()
 
+    # Este retorno PRECISA ficar fora do 'if' para responder ao acesso via navegador (GET)
     return render_template_string(HTML_CAIXA, msg=mensagem)
