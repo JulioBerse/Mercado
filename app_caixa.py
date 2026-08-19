@@ -141,9 +141,45 @@ HTML_CAIXA = """
 """
 
 HTML_ESTOQUE = """
-<!-- (Seu código de HTML_ESTOQUE permanece o mesmo) -->
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Entrada de Estoque</title>
+    <style>
+        body { font-family: Arial, sans-serif; background: #f4f4f9; padding: 20px; }
+        .container { max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin: auto; }
+        h2 { color: #333; }
+        label { display: block; margin-top: 10px; font-weight: bold; }
+        input, button { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; }
+        button { background: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 15px; }
+        button:hover { background: #218838; }
+        .msg { margin-top: 15px; padding: 10px; background: #e2f0d9; color: #385723; border-radius: 4px; text-align: center; }
+        a { display: block; text-align: center; margin-top: 15px; text-decoration: none; color: #007bff; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h2>Entrada de Estoque</h2>
+        {% if msg %}
+            <div class="msg">{{ msg }}</div>
+        {% endif %}
+        <form method="POST">
+            <label for="identificador">Código de Barras ou ID:</label>
+            <input type="text" id="identificador" name="identificador" required autofocus>
+            
+            <label for="quantidade">Quantidade a Adicionar:</label>
+            <input type="number" id="quantidade" name="quantidade" value="1" min="1" required>
+            
+            <button type="submit">Adicionar ao Estoque</button>
+        </form>
+        <a href="/">Voltar para o Caixa</a>
+    </div>
+</body>
+</html>
 """
 
+# --- ROTA DO CAIXA COM REGISTRO DE VENDAS COMPLETO ---
 @app.route('/', methods=['GET', 'POST'])
 def index():
     mensagem = None
@@ -155,16 +191,40 @@ def index():
         conn = conectar_banco()
         cur = conn.cursor()
         try:
+            # 1. Busca nome e preço do produto para o histórico
+            if identificador.isdigit():
+                cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
+            else:
+                cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
+            
+            produto = cur.fetchone()
+            if not produto:
+                raise Exception("Produto não encontrado no cadastro!")
+            
+            nome_produto = produto[0]
+            preco_unitario = float(produto[1])
+            total_venda = preco_unitario * quantidade
+
+            # 2. Atualiza (baixa) o estoque
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
+            # 3. REGISTRA NA TABELA DE VENDAS
+            cur.execute(
+                "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade) VALUES (NOW(), %s, %s, %s, %s);",
+                (total_venda, forma_pagamento, nome_produto, quantidade)
+            )
+            
+            # (Opcional caso utilize a tabela de backup/espelho mencionada)
+            # cur.execute("INSERT INTO produtobkp ...", (...))
+
             conn.commit()
-            mensagem = f"Venda registrada com sucesso! ({quantidade}x - {forma_pagamento})"
+            mensagem = f"Venda realizada com sucesso! ({quantidade}x {nome_produto} - R$ {total_venda:.2f})"
         except Exception as e:
             conn.rollback()
-            mensagem = f"Erro ao registrar no banco: {e}"
+            mensagem = f"Erro ao registrar venda: {e}"
         finally:
             cur.close()
             conn.close()
