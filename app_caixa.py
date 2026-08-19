@@ -15,6 +15,7 @@ HTML_CAIXA = """
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
+    <a href="/estoque/entrada" style="padding: 10px 15px; background: #28a745; color: white; border-radius: 5px; text-decoration: none; font-weight: bold; display: inline-block; margin-bottom: 15px;">📦 Ir para Entrada de Estoque</a>
     <meta charset="UTF-8">
     <title>Berse Supermercados - PDV</title>
     <style>
@@ -58,36 +59,37 @@ HTML_ESTOQUE = """
     <meta charset="UTF-8">
     <title>Entrada de Estoque - Berse Supermercados</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 30px; background-color: #f4f4f9; }
-        .container { max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.1); }
-        h1 { color: #333; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input { width: 100%; padding: 8px; margin-top: 5px; box-sizing: border-box; }
-        button { margin-top: 15px; width: 100%; padding: 10px; background-color: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 40px; background-color: #f0f2f5; display: flex; justify-content: center; }
+        .card { background: #ffffff; width: 100%; max-width: 500px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
+        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
+        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        input:focus { border-color: #28a745; outline: none; }
+        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         button:hover { background-color: #218838; }
-        .msg { margin-top: 15px; padding: 10px; background: #e2e3e5; border-radius: 4px; }
-        .voltar { display: inline-block; margin-top: 15px; color: #007bff; text-decoration: none; font-weight: bold; }
+        .msg { margin-top: 20px; padding: 12px; background: #e8f5e9; color: #2e7d32; border-radius: 6px; font-weight: bold; text-align: center; }
+        .btn-voltar { display: inline-block; margin-top: 20px; color: #007bff; text-decoration: none; font-weight: 600; }
+        .btn-voltar:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h1>Entrada de Estoque</h1>
+    <div class="card">
+        <h1>📦 Entrada de Estoque</h1>
         <form method="POST">
             <label for="codigo_barra">Código de Barras do Produto:</label>
-            <input type="text" id="codigo_barra" name="codigo_barra" required>
+            <input type="text" id="codigo_barra" name="codigo_barra" placeholder="Ex: 7891234567890" required autofocus>
 
             <label for="quantidade">Quantidade a Adicionar:</label>
-            <input type="number" id="quantidade" name="quantidade" required min="1">
+            <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 10" required min="1">
 
-            <button type="submit">Adicionar ao Estoque</button>
+            <button type="submit">Atualizar Estoque</button>
         </form>
 
         {% if msg %}
             <div class="msg">{{ msg }}</div>
         {% endif %}
 
-        <br>
-        <a class="voltar" href="/">← Voltar para o PDV (Frente de Caixa)</a>
+        <a class="btn-voltar" href="/">← Voltar para o PDV (Frente de Caixa)</a>
     </div>
 </body>
 </html>
