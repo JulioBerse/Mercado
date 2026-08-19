@@ -1,16 +1,3 @@
-import os
-from flask import Flask, render_template_string, request, jsonify, render_template
-import psycopg2
-
-app = Flask(__name__)
-
-# CONFIGURAÇÕES DO BANCO DE DADOS
-HOST = "localhost"
-PORTA = "5432"
-BANCO = "Mercado"
-USUARIO = "postgres"
-SENHA = "j"  # COLOQUE SUA SENHA DO POSTGRESQL AQUI
-
 HTML_CAIXA = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -175,60 +162,3 @@ def registrar_venda():
         return render_template_string(HTML_CAIXA, msg="Venda concluída com sucesso!")
     except Exception as e:
         return render_template_string(HTML_CAIXA, erro=f"Erro ao registrar venda: {e}")
-    
-@app.route('/')
-def home():
-    return render_template_string(HTML_CAIXA)
-
-@app.route('/registrar_venda', methods=['POST'])
-def registrar_venda():
-    try:
-        codigo_barra = request.form.get('codigo_barra')
-        quantidade = int(request.form.get('quantidade'))
-
-        db_url = os.environ.get('DATABASE_URL', f"postgresql://{USUARIO}:{SENHA}@{HOST}:{PORTA}/{BANCO}")
-        conn = psycopg2.connect(db_url)
-        cur = conn.cursor()
-
-        cur.execute(
-            "UPDATE produto SET estoque = estoque - %s WHERE codigo_barra = %s",
-            (quantidade, codigo_barra)
-        )
-        conn.commit()
-        cur.close()
-        conn.close()
-
-        return render_template_string(HTML_CAIXA, msg="Venda registrada com sucesso!")
-    except Exception as e:
-        return render_template_string(HTML_CAIXA, erro=f"Erro ao salvar venda: {e}")
-
-@app.route('/estoque/entrada', methods=['GET', 'POST'])
-def entrada_estoque():
-    mensagem = None
-
-    if request.method == 'POST':
-        codigo_barra = request.form.get('codigo_barra')
-        quantidade = int(request.form.get('quantidade'))
-
-        db_url = os.environ.get('DATABASE_URL', f"postgresql://{USUARIO}:{SENHA}@{HOST}:{PORTA}/{BANCO}")
-        conn = psycopg2.connect(db_url)
-        cur = conn.cursor()
-
-        cur.execute(
-            "UPDATE produto SET estoque = estoque + %s WHERE codigo_barra = %s",
-            (quantidade, codigo_barra)
-        )
-        conn.commit()
-
-        if cur.rowcount > 0:
-            mensagem = f"Sucesso! Adicionadas {quantidade} unidades ao produto."
-        else:
-            mensagem = "Erro: Produto não encontrado com esse código!"
-
-        cur.close()
-        conn.close()
-
-    return render_template_string(HTML_ESTOQUE, msg=mensagem)
-
-if __name__ == '__main__':
-    app.run(debug=True)
