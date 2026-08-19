@@ -1,16 +1,60 @@
 import os
 import psycopg2
-from flask import Flask, render_template_string, request, jsonify
+from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
 
 app = Flask(__name__)
+app.secret_key = "chave_secreta_super_segura_berse" # Necessário para usar sessões no Flask
 
-# CONFIGURAÇÃO CORRETA: Tabela no singular
+# CONFIGURAÇÃO: Tabela de produtos e usuários
 TABELA_PRODUTO = "produto"
+TABELA_USUARIO = "usuario" # Conforme visto no seu banco
 
 def conectar_banco():
     db_url = os.environ.get('DATABASE_URL')
     return psycopg2.connect(db_url)
 
+# --- TEMPLATE DA TELA DE LOGIN ---
+HTML_LOGIN = """
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Login - Grupo Yamasaki PDV</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 0; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; height: 100vh; }
+        .login-card { background: #ffffff; width: 100%; max-width: 400px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #007bff; text-align: center; margin-top: 0; }
+        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
+        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .msg { margin-top: 15px; padding: 10px; border-radius: 6px; font-weight: bold; text-align: center; background: #ffebee; color: #c62828; }
+    </style>
+</head>
+<body>
+    <div class="login-card">
+        <h2>🏪 GRUPO YAMASAKI</h2>
+        <p style="text-align: center; color: #666; font-size: 14px;">Faça login para acessar o PDV</p>
+        
+        <form method="POST">
+            <label for="username">Usuário:</label>
+            <input type="text" id="username" name="username" required autofocus>
+            
+            <label for="password">Senha:</label>
+            <input type="password" id="password" name="password" required>
+            
+            <button type="submit">Entrar</button>
+        </form>
+
+        {% if msg %}
+            <div class="msg">{{ msg }}</div>
+        {% endif %}
+    </div>
+</body>
+</html>
+"""
+
+# --- TEMPLATE DA TELA DE CAIXA (Com Operador Logado) ---
 HTML_CAIXA = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -34,8 +78,10 @@ HTML_CAIXA = """
         .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
         .msg-erro { background: #ffebee; color: #c62828; }
         .nav-link { display: inline-block; margin-bottom: 15px; color: #28a745; text-decoration: none; font-weight: bold; }
-        .brand-header { text-align: center; margin-bottom: 20px; }
-        .brand-header h2 { color: #007bff; margin: 0; font-size: 22px; font-weight: bold; letter-spacing: 1px; }
+        .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; }
+        .brand-header h2 { color: #007bff; margin: 0; font-size: 20px; font-weight: bold; }
+        .user-info { font-size: 13px; color: #555; text-align: right; }
+        .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
         .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
     </style>
 </head>
@@ -43,6 +89,9 @@ HTML_CAIXA = """
     <div class="card">
         <div class="brand-header">
             <h2>🏪 GRUPO YAMASAKI</h2>
+            <div class="user-info">
+                Operador: <strong>{{ usuario }}</strong> <a href="/logout">[Sair]</a>
+            </div>
         </div>
         <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
         <h1>🛒 Frente de Caixa (PDV)</h1>
@@ -179,9 +228,46 @@ HTML_ESTOQUE = """
 </html>
 """
 
-# --- ROTA DO CAIXA COM REGISTRO DE VENDAS COMPLETO ---
+# --- ROTA DE LOGIN ---
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    mensagem = None
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+
+        conn = conectar_banco()
+        cur = conn.cursor()
+        try:
+            # Nota: Ajuste os nomes das colunas (ex: username, senha) se forem diferentes no seu banco
+            cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE username = %s AND senha = %s;", (username, password))
+            usuario = cur.fetchone()
+            
+            if usuario:
+                session['usuario'] = username
+                return redirect(url_for('index'))
+            else:
+                mensagem = "Usuário ou senha inválidos!"
+        except Exception as e:
+            mensagem = f"Erro no login: {e}"
+        finally:
+            cur.close()
+            conn.close()
+
+    return render_template_string(HTML_LOGIN, msg=mensagem)
+
+# --- ROTA DE LOGOUT ---
+@app.route('/logout')
+def logout():
+    session.pop('usuario', None)
+    return redirect(url_for('login'))
+
+# --- ROTA DO CAIXA ---
 @app.route('/', methods=['GET', 'POST'])
 def index():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+
     mensagem = None
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip()
@@ -191,7 +277,6 @@ def index():
         conn = conectar_banco()
         cur = conn.cursor()
         try:
-            # 1. Busca nome e preço do produto para o histórico
             if identificador.isdigit():
                 cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
             else:
@@ -205,21 +290,16 @@ def index():
             preco_unitario = float(produto[1])
             total_venda = preco_unitario * quantidade
 
-            # 2. Atualiza (baixa) o estoque
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
-            # 3. REGISTRA NA TABELA DE VENDAS
             cur.execute(
                 "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade) VALUES (NOW(), %s, %s, %s, %s);",
                 (total_venda, forma_pagamento, nome_produto, quantidade)
             )
             
-            # (Opcional caso utilize a tabela de backup/espelho mencionada)
-            # cur.execute("INSERT INTO produtobkp ...", (...))
-
             conn.commit()
             mensagem = f"Venda realizada com sucesso! ({quantidade}x {nome_produto} - R$ {total_venda:.2f})"
         except Exception as e:
@@ -229,10 +309,12 @@ def index():
             cur.close()
             conn.close()
 
-    return render_template_string(HTML_CAIXA, msg=mensagem)
+    return render_template_string(HTML_CAIXA, msg=mensagem, usuario=session['usuario'])
 
 @app.route('/buscar_produto')
 def buscar_produto():
+    if 'usuario' not in session:
+        return jsonify({'sucesso': False})
     q = request.args.get('q', '').strip()
     conn = conectar_banco()
     cur = conn.cursor()
@@ -251,6 +333,8 @@ def buscar_produto():
 
 @app.route('/api/produto/<identificador>')
 def api_produto(identificador):
+    if 'usuario' not in session:
+        return jsonify({'encontrado': False})
     conn = conectar_banco()
     cur = conn.cursor()
     try:
@@ -266,6 +350,9 @@ def api_produto(identificador):
 
 @app.route('/estoque/entrada', methods=['GET', 'POST'])
 def entrada_estoque():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+
     mensagem = None
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip()
