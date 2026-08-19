@@ -4,8 +4,8 @@ from flask import Flask, render_template_string, request, jsonify
 
 app = Flask(__name__)
 
-# CONFIGURAÇÕES DO BANCO DE DADOS (Mantendo a sua estrutura atual)
-TABELA_PRODUTOS = "produto"
+# CONFIGURAÇÃO CORRETA: Tabela no singular
+TABELA_PRODUTO = "produto"
 
 def conectar_banco():
     db_url = os.environ.get('DATABASE_URL')
@@ -83,10 +83,6 @@ HTML_CAIXA = """
 
             <button type="submit" id="btnFinalizar">Registrar Venda (ENTER)</button>
         </form>
-
-        {% if msg %}
-            <div class="msg {% if 'Erro' in msg %}msg-erro{% else %}msg-sucesso{% endif %}">{{ msg }}</div>
-        {% endif %}
 
         <div class="footer-system">
             Powered by <strong>Yamasaki Technology Solution</strong> 🚀
@@ -179,7 +175,6 @@ HTML_ESTOQUE = """
         .msg { margin-top: 20px; padding: 12px; background: #e8f5e9; color: #2e7d32; border-radius: 6px; font-weight: bold; text-align: center; }
         .btn-voltar { display: inline-block; margin-top: 20px; color: #007bff; text-decoration: none; font-weight: 600; }
         .btn-voltar:hover { text-decoration: underline; }
-        .hint { font-size: 12px; color: #666; margin-top: 4px; }
         .brand-header { text-align: center; margin-bottom: 20px; }
         .brand-header h2 { color: #007bff; margin: 0; font-size: 22px; font-weight: bold; letter-spacing: 1px; }
         .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
@@ -197,9 +192,8 @@ HTML_ESTOQUE = """
             <label for="identificador">Código de Barras ou ID do Produto:</label>
             <input type="text" id="identificador" name="identificador" placeholder="Digite o ID ou Código..." required autofocus>
             
-            <!-- CAMPO DO NOME ADICIONADO CORRETAMENTE -->
             <label for="nome_display">Produto:</label>
-            <input type="text" id="nome_display" placeholder="Nome aparecerá aqui..." style="background-color: #e9ecef; color: #555;" disabled>
+            <input type="text" id="nome_display" placeholder="Nome do produto..." style="background-color: #e9ecef; color: #555;" disabled>
 
             <label for="quantidade">Quantidade a Adicionar:</label>
             <input type="number" id="quantidade" name="quantidade" placeholder="Ex: 10" required min="1">
@@ -218,7 +212,6 @@ HTML_ESTOQUE = """
         </div>
     </div>
 
-    <!-- SCRIPT PARA BUSCA AUTOMÁTICA NO ESTOQUE -->
     <script>
         const inputId = document.getElementById('identificador');
         const inputNome = document.getElementById('nome_display');
@@ -238,46 +231,42 @@ HTML_ESTOQUE = """
                         inputNome.value = "Produto não encontrado!";
                         inputId.focus();
                     }
+                })
+                .catch(err => {
+                    inputNome.value = "Erro de conexão";
                 });
         });
     </script>
 </body>
 </html>
 """
+
 @app.route('/')
 def index():
     return render_template_string(HTML_CAIXA)
 
-<script>
-        const inputId = document.getElementById('identificador');
-        const inputNome = document.getElementById('nome_display');
-        const inputQtd = document.getElementById('quantidade');
+@app.route('/buscar_produto')
+def buscar_produto():
+    q = request.args.get('q', '').strip()
+    conn = conectar_banco()
+    cur = conn.cursor()
+    try:
+        if q.isdigit():
+            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s;", (int(q),))
+        else:
+            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (q,))
+        
+        produto = cur.fetchone()
+        if produto:
+            return jsonify({'sucesso': True, 'nome': produto[0], 'preco': float(produto[1]), 'estoque': produto[2]})
+        else:
+            return jsonify({'sucesso': False})
+    except Exception as e:
+        return jsonify({'sucesso': False, 'erro': str(e)})
+    finally:
+        cur.close()
+        conn.close()
 
-        inputId.addEventListener('blur', function() {
-            const valor = inputId.value.trim();
-            if (!valor) return;
-
-            // TESTE VISUAL: Vai abrir uma caixinha na tela mostrando o que foi digitado
-            alert("Buscando pelo valor: " + valor);
-
-            fetch(`/api/produto/${valor}`)
-                .then(response => response.json())
-                .then(data => {
-                    console.log("Resposta da API:", data);
-                    if (data.encontrado) {
-                        inputNome.value = data.nome;
-                        inputQtd.focus();
-                    } else {
-                        inputNome.value = "Produto não encontrado!";
-                        inputId.focus();
-                    }
-                })
-                .catch(err => {
-                    console.error("Erro no fetch:", err);
-                    inputNome.value = "Erro de conexão";
-                });
-        });
-    </script>
 @app.route('/api/produto/<identificador>')
 def api_produto(identificador):
     conn = conectar_banco()
@@ -286,7 +275,6 @@ def api_produto(identificador):
         if identificador.isdigit():
             cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
         else:
-            # CORRIGIDO DE codigo_barras PARA codigo_barra
             cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
         
         produto = cur.fetchone()
@@ -315,7 +303,6 @@ def entrada_estoque():
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
-                # CORRIGIDO DE codigo_barras PARA codigo_barra
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
             conn.commit()
