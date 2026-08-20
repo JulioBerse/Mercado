@@ -450,6 +450,43 @@ def index():
 
     return render_template_string(HTML_CAIXA, msg=mensagem, usuario=session['usuario'])
 
+@app.route('/buscar_produto')
+def buscar_produto():
+    if 'usuario' not in session:
+        return jsonify({'sucesso': False})
+    q = request.args.get('q', '').strip()
+    conn = conectar_banco()
+    cur = conn.cursor()
+    try:
+        if q.isdigit():
+            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s;", (int(q),))
+        else:
+            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (q,))
+        produto = cur.fetchone()
+        if produto:
+            return jsonify({'sucesso': True, 'nome': produto[0], 'preco': float(produto[1]), 'estoque': produto[2]})
+        return jsonify({'sucesso': False})
+    finally:
+        cur.close()
+        conn.close()
+
+@app.route('/api/produto/<identificador>')
+def api_produto(identificador):
+    if 'usuario' not in session:
+        return jsonify({'encontrado': False})
+    conn = conectar_banco()
+    cur = conn.cursor()
+    try:
+        if identificador.isdigit():
+            cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
+        else:
+            cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
+        produto = cur.fetchone()
+        return jsonify({'encontrado': bool(produto), 'nome': produto[0] if produto else ""})
+    finally:
+        cur.close()
+        conn.close()
+
 @app.route('/estoque/entrada', methods=['GET', 'POST'])
 def entrada_estoque():
     if 'usuario' not in session:
@@ -496,3 +533,6 @@ def entrada_estoque():
             cur.close()
             conn.close()
     return render_template_string(HTML_ESTOQUE, msg=mensagem, usuario=session['usuario'])
+
+if __name__ == '__main__':
+    app.run(debug=True)
