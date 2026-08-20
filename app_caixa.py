@@ -430,12 +430,35 @@ def entrada_estoque():
         conn = conectar_banco()
         cur = conn.cursor()
         try:
+            # 1. Busca os dados do produto para garantir que ele existe e pegar o ID, nome e preço atual
+            if identificador.isdigit():
+                cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
+            else:
+                cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
+            
+            produto = cur.fetchone()
+            if not produto:
+                raise Exception("Produto não encontrado no cadastro!")
+            
+            prod_id = produto[0]
+            codigo_barra = produto[1]
+            nome_produto = produto[2]
+            preco_unitario = float(produto[3])
+
+            # 2. Atualiza o estoque somando a quantidade
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s;", (quantidade, identificador))
+            
+            # 3. Registra também na tabela produtobkp a entrada de mercadoria
+            cur.execute(
+                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) VALUES (%s, %s, %s, %s, %s, NOW());",
+                (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade)
+            )
+
             conn.commit()
-            mensagem = f"Estoque atualizado com sucesso! ({quantidade:+d} unidades)"
+            mensagem = f"Estoque atualizado com sucesso! ({quantidade:+d} unidades de {nome_produto})"
         except Exception as e:
             conn.rollback()
             mensagem = f"Erro ao atualizar estoque: {e}"
@@ -443,6 +466,6 @@ def entrada_estoque():
             cur.close()
             conn.close()
     return render_template_string(HTML_ESTOQUE, msg=mensagem, usuario=session['usuario'])
-
+    
 if __name__ == '__main__':
     app.run(debug=True)
