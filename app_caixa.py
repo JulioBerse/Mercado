@@ -379,6 +379,21 @@ HTML_FECHAMENTO = """
 <body>
     <div class="card">
         <h2>📊 Fechamento de Caixa - {{ data_hoje }}</h2>
+        <!-- 👇 COLE O CÓDIGO DO BOTÃO EXATAMENTE AQUI EMBAIXO DO H2: -->
+        {% if msg %}
+            <div style="background: #e8f5e9; color: #2e7d32; padding: 10px; border-radius: 6px; margin-bottom: 15px; text-align: center; font-weight: bold;">{{ msg }}</div>
+        {% endif %}
+
+        {% if fechamento_salvo %}
+            <div style="background: #e3f2fd; color: #0d47a1; padding: 8px; border-radius: 6px; margin-bottom: 15px; text-align: center; font-size: 13px;">
+                🔒 Caixa fechado e estocado por <strong>{{ fechamento_salvo[0] }}</strong>
+            </div>
+        {% else %}
+            <form method="POST" style="margin-bottom: 20px;">
+                <button type="submit" style="background-color: #28a745; margin-top: 0; padding: 12px; color: white; border: none; border-radius: 6px; font-weight: bold; cursor: pointer; width: 100%;">💾 Salvar / Estocar Fechamento do Dia</button>
+            </form>
+        {% endif %}
+        <!-- 👆 FIM DO CÓDIGO DO BOTÃO -->
         
         <div class="chart-container">
             <canvas id="meuGrafico"></canvas>
@@ -605,15 +620,46 @@ def estoque_entrada():
     return render_template_string(HTML_ESTOQUE, usuario=operador_atual, msg=mensagem)
     # ... (suas outras rotas como @app.route('/login') e @app.route('/'))
 
-@app.route('/fechamento')
+@app.route('/fechamento', methods=['GET', 'POST'])
 def fechamento():
     if 'usuario' not in session:
         return redirect(url_for('login'))
     
+    operador_atual = session['usuario']
     conn = conectar_banco()
     cur = conn.cursor()
     
-    # 1. Busca vendas por forma de pagamento (para o gráfico)
+    mensagem = None
+    
+    # Se o usuário clicou no botão para salvar o fechamento
+    if request.method == 'POST':
+        try:
+            # Pega o total geral do dia e os detalhes
+            cur.execute("""
+                SELECT SUM(total), string_agg(forma_pagamento || ': R$ ' || total, ', ') 
+                FROM vendas WHERE data_venda::date = CURRENT_DATE
+            """)
+            res = cur.fetchone()
+            total_geral = res[0] or 0
+            detalhes = res[1] or "Sem vendas"
+            
+            # Insere ou atualiza o fechamento do dia atual na tabela nova
+            cur.execute("""
+                INSERT INTO fechamento_caixa (data_fechamento, total_geral, detalhes_pagamento, operador_responsavel)
+                VALUES (CURRENT_DATE, %s, %s, %s)
+                ON CONFLICT (data_fechamento) 
+                DO UPDATE SET total_geral = EXCLUDED.total_geral, 
+                              detalhes_pagamento = EXCLUDED.detalhes_pagamento, 
+                              operador_responsavel = EXCLUDED.operador_responsavel;
+            """, (total_geral, detalhes, operador_atual))
+            
+            conn.commit()
+            mensagem = "Fechamento de caixa salvo com sucesso no banco de dados!"
+        except Exception as e:
+            conn.rollback()
+            mensagem = f"Erro ao salvar fechamento: {e}"
+
+    # Busca vendas por forma de pagamento (gráfico)
     cur.execute("""
         SELECT forma_pagamento, SUM(total) as soma 
         FROM vendas 
@@ -622,7 +668,7 @@ def fechamento():
     """)
     dados_grafico = cur.fetchall()
     
-    # 2. Busca total de vendas por operador (vendedor) no dia
+    # Busca total de vendas por operador no dia
     cur.execute("""
         SELECT operador, SUM(total) as total_vendido, COUNT(*) as qtd_vendas
         FROM vendas 
@@ -632,17 +678,26 @@ def fechamento():
     """)
     dados_vendedores = cur.fetchall()
     
+    # Verifica se o dia de hoje já foi estocado/salvo
+    cur.execute("SELECT operador_responsavel, criado_em FROM fechamento_caixa WHERE data_fechamento = CURRENT_DATE;")
+    fechamento_salvo = cur.fetchone()
+    
     cur.close()
     conn.close()
     
-    # Formata para o Chart.js
     labels = [d[0] for d in dados_grafico]
     valores = [float(d[1]) for d in dados_grafico]
-
-    # 3. INSERE O TIMESTAMP DO DIA DO FECHAMENTO 
     data_atual = datetime.now().strftime('%d/%m/%Y')
     
-    return render_template_string(HTML_FECHAMENTO, labels=labels, valores=valores, vendedores=dados_vendedores)
+    return render_template_string(
+        HTML_FECHAMENTO, 
+        labels=labels, 
+        valores=valores, 
+        vendedores=dados_vendedores, 
+        data_hoje=data_atual, 
+        msg=mensagem,
+        fechamento_salvo=fechamento_salvo
+    )
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
