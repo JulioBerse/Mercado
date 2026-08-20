@@ -376,7 +376,7 @@ HTML_FECHAMENTO = """
 </head>
 <body>
     <div class="card">
-        <h2>📊 Fechamento de Caixa - Hoje</h2>
+        <h2>📊 Fechamento de Caixa - {{ data_hoje }}</h2>
         
         <div class="chart-container">
             <canvas id="meuGrafico"></canvas>
@@ -636,6 +636,9 @@ def fechamento():
     # Formata para o Chart.js
     labels = [d[0] for d in dados_grafico]
     valores = [float(d[1]) for d in dados_grafico]
+
+    # 3. INSERE O TIMESTAMP DO DIA DO FECHAMENTO 
+    data_atual = datetime.now().strftime('%d/%m/%Y')
     
     return render_template_string(HTML_FECHAMENTO, labels=labels, valores=valores, vendedores=dados_vendedores)
 
