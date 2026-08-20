@@ -240,7 +240,7 @@ def login():
         cur = conn.cursor()
         try:
             # Nota: Ajuste os nomes das colunas (ex: username, senha) se forem diferentes no seu banco
-            cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE username = %s AND senha = %s;", (username, password))
+            cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE login = %s AND senha = %s;", (username, password))
             usuario = cur.fetchone()
             
             if usuario:
