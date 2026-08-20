@@ -1,51 +1,53 @@
-import os
+from flask import Flask, render_template_string, request, redirect, url_for, session, jsonify
 import psycopg2
-from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
+import os
 
 app = Flask(__name__)
-app.secret_key = "chave_secreta_super_segura_berse"
-
-TABELA_PRODUTO = "produto"
-TABELA_USUARIO = "usuario"
+app.secret_key = 'sua_chave_secreta_aqui'
 
 def conectar_banco():
-    db_url = os.environ.get('DATABASE_URL')
-    return psycopg2.connect(db_url)
+    return psycopg2.connect(os.environ.get('DATABASE_URL'))
+
+TABELA_USUARIO = "usuario"
+TABELA_PRODUTO = "produto"
+
+# --- TEMPLATES HTML ---
 
 HTML_LOGIN = """
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Login - Grupo Yamasaki PDV</title>
+    <title>Grupo Yamasaki - Login</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; }
-        .login-card { background: #ffffff; width: 100%; max-width: 400px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h2 { color: #007bff; text-align: center; margin-top: 0; }
-        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
-        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
-        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
-        button:hover { background-color: #0056b3; }
-        .msg { margin-top: 15px; padding: 10px; border-radius: 6px; font-weight: bold; text-align: center; background: #ffebee; color: #c62828; }
+        body { background: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
+        .login-card { background: #1e293b; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 400px; border-top: 4px solid #3b82f6; }
+        h2 { text-align: center; margin-bottom: 24px; color: #60a5fa; }
+        .form-group { margin-bottom: 16px; }
+        label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
+        input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; }
+        input:focus { border-color: #3b82f6; outline: none; }
+        button { width: 100%; padding: 12px; background: #3b82f6; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
+        button:hover { background: #2563eb; }
+        .error { color: #f87171; font-size: 14px; text-align: center; margin-top: 12px; }
     </style>
 </head>
 <body>
     <div class="login-card">
-        <h2>🏪 GRUPO YAMASAKI</h2>
-        <p style="text-align: center; color: #666; font-size: 14px;">Faça login para acessar o PDV</p>
-        
+        <h2>Grupo Yamasaki</h2>
         <form method="POST">
-            <label for="username">Usuário:</label>
-            <input type="text" id="username" name="username" required autofocus>
-            
-            <label for="password">Senha:</label>
-            <input type="password" id="password" name="password" required>
-            
-            <button type="submit">Entrar</button>
+            <div class="form-group">
+                <label>Usuário</label>
+                <input type="text" name="username" required autofocus>
+            </div>
+            <div class="form-group">
+                <label>Senha</label>
+                <input type="password" name="password" required>
+            </div>
+            <button type="submit">Entrar no Sistema</button>
         </form>
-
         {% if msg %}
-            <div class="msg">{{ msg }}</div>
+            <div class="error">{{ msg }}</div>
         {% endif %}
     </div>
 </body>
@@ -57,194 +59,79 @@ HTML_CAIXA = """
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Berse Supermercados - PDV</title>
+    <title>Grupo Yamasaki - PDV Caixa</title>
     <style>
-
-        body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    margin: 0;
-    min-height: 100vh;
-    background-color: #f0f2f5;
-    
-    /* Textura de fundo moderna (padrão sutil em grid) */
-    background-image: 
-        linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
-        linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
-    background-size: 20px 20px;
-    
-    display: flex;
-    justify-content: center;
-    align-items: center;
-    padding: 20px;
-    box-sizing: border-box;
-}
-        
-        /* Container principal que segura o Pix e o Card lado a lado */
-        .main-container { display: flex; gap: 20px; align-items: flex-start; max-width: 1000px; width: 100%; justify-content: center; }
-        
-        /* Estilo do Card do Pix à esquerda */
-        .pix-card { background: #ffffff; width: 100%; max-width: 350px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; text-align: center; }
-        .pix-card h3 { color: #007bff; margin-top: 0; font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 8px; }
-        .qr-placeholder { width: 200px; height: 200px; background: #f8f9fa; border: 2px dashed #ccc; border-radius: 8px; margin: 15px auto; display: flex; align-items: center; justify-content: center; color: #666; font-size: 14px; }
-        .btn-pix-link { display: inline-block; margin-top: 10px; padding: 10px 15px; background-color: #28a745; color: white; text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 14px; }
-        .btn-pix-link:hover { background-color: #218838; }
-
-        .card { background: #ffffff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
-        input, select { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #fff; }
-        input:focus, select:focus { border-color: #007bff; outline: none; }
-        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        button:hover { background-color: #0056b3; }
-        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px; }
-        .info-row strong { color: #333; }
-        .total-box { font-size: 20px; color: #28a745; border-top: 2px solid #28a745; padding-top: 10px; margin-top: 10px; }
-        .msg { margin-top: 20px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; }
-        .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
-        .msg-erro { background: #ffebee; color: #c62828; }
-        .nav-link { display: inline-block; margin-bottom: 15px; color: #28a745; text-decoration: none; font-weight: bold; }
-        .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; }
-        .brand-header h2 { color: #007bff; margin: 0; font-size: 20px; font-weight: bold; }
-        .user-info { font-size: 13px; color: #555; text-align: right; }
-        .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
-        .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
+        body { background: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #3b82f6; }
+        .nav-links a { color: #60a5fa; text-decoration: none; margin-left: 15px; font-weight: 600; }
+        .nav-links a:hover { text-decoration: underline; }
+        .container { max-width: 800px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        h1 { color: #60a5fa; margin-top: 0; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #94a3b8; }
+        input, select { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; font-size: 16px; }
+        button { background: #10b981; color: white; border: none; padding: 14px; width: 100%; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
+        button:hover { background: #059669; }
+        .msg { padding: 12px; background: #065f46; color: #d1fae5; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+        #info_produto { color: #fbbf24; font-size: 14px; margin-top: 5px; }
     </style>
-</head>
-<body>
-
-   <!-- PAINEL PIX REAL -->
-    <div id="painel-pix" class="pix-card">
-        <h3 style="color: #28a745; margin-top: 0;">Pagamento via Pix</h3>
-        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Escaneie o QR Code abaixo:</p>
-        
-        <!-- Imagem gerada dinamicamente com o seu Payload do Pix -->
-        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=00020126400014br.gov.bcb.pix0118py9dm.mt@gmail.com5204000053039865802BR5915BERSEJULIOCESAR6009Sao Paulo610901227-20062230519daqr2112582259416686304F335" alt="QR Code Pix" style="width: 200px; height: 200px; border-radius: 8px; border: 1px solid #ddd; padding: 5px; background: #fff;">
-        
-        <p style="font-size: 12px; color: #666; margin-top: 10px;">Ou copie o código Copia e Cola:</p>
-        <textarea readonly style="width: 100%; height: 50px; font-size: 10px; border: 1px solid #ccc; padding: 5px; resize: none; background: #f9f9f9;">00020126400014br.gov.bcb.pix0118py9dm.mt@gmail.com5204000053039865802BR5915BERSEJULIOCESAR6009Sao Paulo610901227-20062230519daqr2112582259416686304F335</textarea>
-    </div>
-
-        <!-- CARD PRINCIPAL DE VENDAS -->
-        <div class="card">
-            <div style="text-align: center; margin-bottom: 15px;">
-                <div style="display: inline-block; width: 40px; height: 40px; background-color: #bc002d; border-radius: 50%; line-height: 40px; color: white; font-weight: bold; font-size: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 4px;">山</div>
-                <h2 style="color: #1a1a1a; font-size: 18px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
-                <span style="color: #666; font-size: 10px; letter-spacing: 3px; text-transform: uppercase;">山崎グループ</span>
-            </div>
-            <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 15px;">
-
-            <div class="brand-header">
-                <h2>🏪 Frente de Caixa</h2>
-                <div class="user-info">
-                    Operador: <strong>{{ usuario }}</strong> <a href="/logout">[Sair]</a>
-                </div>
-            </div>
-            <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
-
-            <form id="formVenda" method="POST" action="/">
-                <label for="identificador">ID ou Código de Barras do Produto:</label>
-                <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
-                
-                <label for="forma_pagamento">Forma de Pagamento:</label>
-                <select name="forma_pagamento" id="forma_pagamento" onchange="verificarPix()">
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="Cartao">Cartão</option>
-                    <option value="Pix">Pix</option>
-                </select>
-
-                <div class="info-box">
-                    <div class="info-row">
-                        <span>Produto:</span>
-                        <strong id="nome_produto">Aguardando busca...</strong>
-                    </div>
-                    <div class="info-row">
-                        <span>Valor Unitário:</span>
-                        <strong id="valor_unitario">R$ 0,00</strong>
-                    </div>
-                </div>
-
-                <label for="quantidade">Quantidade:</label>
-                <input type="number" id="quantidade" name="quantidade" value="1" min="1" required oninput="calcularTotal()" onkeydown="tratarTeclaQuantidade(event)">
-
-                <div class="info-box total-box">
-                    <div class="info-row">
-                        <span>VALOR TOTAL:</span>
-                        <strong id="valor_total">R$ 0,00</strong>
-                    </div>
-                </div>
-
-                <button type="submit" id="btnFinalizar">Registrar Venda (ENTER)</button>
-            </form>
-
-            {% if msg %}
-                <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
-            {% endif %}
-
-            <div class="footer-system">
-                Powered by <strong>Yamasaki Technology Solution</strong> 🚀
-            </div>
-        </div>
-    </div>
-
     <script>
-        let precoUnitarioAtual = 0;
-
-        // Função que controla a exibição do painel Pix ao lado
-        function verificarPix() {
-            const formaPagto = document.getElementById('forma_pagamento').value;
-            const painelPix = document.getElementById('painel-pix');
-            
-            if (formaPagto === 'Pix') {
-                painelPix.style.display = 'block'; // Mostra o QR Code/Link à esquerda
+        function buscarProduto() {
+            let id = document.getElementById('identificador').value.trim();
+            let infoDiv = document.getElementById('info_produto');
+            if (id.length > 0) {
+                fetch('/api/produto/' + id)
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.encontrado) {
+                            infoDiv.innerText = "Produto: " + data.nome;
+                        } else {
+                            infoDiv.innerText = "Aguardando busca / Produto não encontrado";
+                        }
+                    });
             } else {
-                painelPix.style.display = 'none';  // Oculta se for Dinheiro ou Cartão
+                infoDiv.innerText = "";
             }
-        }
-
-        async function buscarProduto() {
-            const identificador = document.getElementById('identificador').value.trim();
-            if (!identificador) { resetarCampos(); return false; }
-            try {
-                const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
-                const data = await response.json();
-                if (data.sucesso) {
-                    document.getElementById('nome_produto').innerText = data.nome;
-                    precoUnitarioAtual = parseFloat(data.preco);
-                    document.getElementById('valor_unitario').innerText = 'R$ ' + precoUnitarioAtual.toFixed(2).replace('.', ',');
-                    calcularTotal();
-                    return true;
-                } else {
-                    document.getElementById('nome_produto').innerText = 'Produto não encontrado';
-                    resetarCampos();
-                    return false;
-                }
-            } catch (e) { resetarCampos(); return false; }
-        }
-
-        async function tratarTeclaIdentificador(e) {
-            if (e.key === 'Enter' || e.key === 'Tab') {
-                e.preventDefault();
-                const achou = await buscarProduto();
-                if (achou) {
-                    const campoQtd = document.getElementById('quantidade');
-                    campoQtd.focus();
-                    campoQtd.select();
-                }
-            }
-        }
-        function tratarTeclaQuantidade(e) { if (e.key === 'Enter') { calcularTotal(); } }
-        function calcularTotal() {
-            const qtd = parseInt(document.getElementById('quantidade').value) || 0;
-            const total = precoUnitarioAtual * qtd;
-            document.getElementById('valor_total').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
-        }
-        function resetarCampos() {
-            document.getElementById('valor_unitario').innerText = 'R$ 0,00';
-            document.getElementById('valor_total').innerText = 'R$ 0,00';
-            precoUnitarioAtual = 0;
         }
     </script>
+</head>
+<body>
+    <div class="header">
+        <div><strong>Operador:</strong> {{ usuario }}</div>
+        <div class="nav-links">
+            <a href="/">Caixa (Venda)</a>
+            <a href="/estoque/entrada">Entrada de Estoque</a>
+            <a href="/relatorio/fechamento">📊 Fechamento de Caixa</a>
+            <a href="/logout" style="color: #f87171;">Sair</a>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Frente de Caixa - PDV</h1>
+        {% if msg %}
+            <div class="msg">{{ msg }}</div>
+        {% endif %}
+        <form method="POST">
+            <div class="form-group">
+                <label>Código de Barras ou ID do Produto</label>
+                <input type="text" id="identificador" name="identificador" onkeyup="buscarProduto()" required autofocus>
+                <div id="info_produto"></div>
+            </div>
+            <div class="form-group">
+                <label>Quantidade</label>
+                <input type="number" name="quantidade" value="1" min="1" required>
+            </div>
+            <div class="form-group">
+                <label>Forma de Pagamento</label>
+                <select name="forma_pagamento">
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Pix">Pix</option>
+                    <option value="Cartão de Crédito">Cartão de Crédito</option>
+                    <option value="Cartão de Débito">Cartão de Débito</option>
+                </select>
+            </div>
+            <button type="submit">Finalizar Venda</button>
+        </form>
+    </div>
 </body>
 </html>
 """
@@ -254,115 +141,127 @@ HTML_ESTOQUE = """
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Entrada de Estoque - Grupo Yamasaki</title>
+    <title>Grupo Yamasaki - Entrada de Estoque</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; }
-        .card { background: #ffffff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
-        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
-        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
-        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #fff; }
-        input:focus { border-color: #28a745; outline: none; }
-        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
-        button:hover { background-color: #218838; }
-        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px; }
-        .info-row strong { color: #333; }
-        .msg { margin-top: 20px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; }
-        .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
-        .msg-erro { background: #ffebee; color: #c62828; }
-        .nav-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-weight: bold; }
-        .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; }
-        .brand-header h2 { color: #007bff; margin: 0; font-size: 20px; font-weight: bold; }
-        .user-info { font-size: 13px; color: #555; text-align: right; }
-        .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
-        .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
+        body { background: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #3b82f6; }
+        .nav-links a { color: #60a5fa; text-decoration: none; margin-left: 15px; font-weight: 600; }
+        .container { max-width: 800px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        h1 { color: #60a5fa; margin-top: 0; }
+        .form-group { margin-bottom: 20px; }
+        label { display: block; margin-bottom: 8px; font-weight: 600; color: #94a3b8; }
+        input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; font-size: 16px; }
+        button { background: #3b82f6; color: white; border: none; padding: 14px; width: 100%; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; }
+        button:hover { background: #2563eb; }
+        .msg { padding: 12px; background: #1e3a8a; color: #bfdbfe; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold; }
+        #info_produto { color: #fbbf24; font-size: 14px; margin-top: 5px; }
     </style>
 </head>
 <body>
-  <div class="card">
-        <div style="text-align: center; margin-bottom: 15px;">
-            <div style="display: inline-block; width: 40px; height: 40px; background-color: #bc002d; border-radius: 50%; line-height: 40px; color: white; font-weight: bold; font-size: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 4px;">山</div>
-            <h2 style="color: #1a1a1a; font-size: 18px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
-            <span style="color: #666; font-size: 10px; letter-spacing: 3px; text-transform: uppercase;">山崎グループ</span>
-        </div>
-        <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 15px;">
-
-        <div class="brand-header">
-            <h2>📦 Gerenciamento de Estoque</h2>
-            <div class="user-info">
-                Operador: <strong>{{ usuario }}</strong> <a href="/logout">[Sair]</a>
-            </div>
-        </div>
-        <a class="nav-link" href="/">← Voltar para o Caixa</a>
-
-        <form method="POST">
-            <label for="identificador">Código de Barras ou ID:</label>
-            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProdutoEstoque()" onkeydown="tratarTeclaIdentificadorEstoque(event)">
-            
-            <div class="info-box">
-                <div class="info-row">
-                    <span>Produto:</span>
-                    <strong id="nome_produto">Aguardando busca...</strong>
-                </div>
-                <div class="info-row">
-                    <span>Estoque Atual:</span>
-                    <strong id="estoque_atual">-</strong>
-                </div>
-            </div>
-
-            <label for="quantidade">Quantidade a Adicionar / Retirar (ex: 10 ou -10):</label>
-            <input type="number" id="quantidade" name="quantidade" value="1" required>
-
-            <button type="submit">Atualizar Estoque</button>
-        </form>
-
-        {% if msg %}
-            <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
-        {% endif %}
-
-        <div class="footer-system">
-            Powered by <strong>Yamasaki Technology Solution</strong> 🚀
+    <div class="header">
+        <div><strong>Operador:</strong> {{ usuario }}</div>
+        <div class="nav-links">
+            <a href="/">Caixa (Venda)</a>
+            <a href="/estoque/entrada">Entrada de Estoque</a>
+            <a href="/relatorio/fechamento">📊 Fechamento de Caixa</a>
+            <a href="/logout" style="color: #f87171;">Sair</a>
         </div>
     </div>
-
-    <script>
-        async function buscarProdutoEstoque() {
-            const identificador = document.getElementById('identificador').value.trim();
-            if (!identificador) { resetarCampos(); return false; }
-            try {
-                const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
-                const data = await response.json();
-                if (data.sucesso) {
-                    document.getElementById('nome_produto').innerText = data.nome;
-                    document.getElementById('estoque_atual').innerText = data.estoque;
-                    return true;
-                } else {
-                    document.getElementById('nome_produto').innerText = 'Produto não encontrado';
-                    document.getElementById('estoque_atual').innerText = '-';
-                    return false;
-                }
-            } catch (e) { resetarCampos(); return false; }
-        }
-
-        async function tratarTeclaIdentificadorEstoque(e) {
-            if (e.key === 'Enter' || e.key === 'Tab') {
-                e.preventDefault();
-                const achou = await buscarProdutoEstoque();
-                if (achou) {
-                    const campoQtd = document.getElementById('quantidade');
-                    campoQtd.focus();
-                    campoQtd.select();
-                }
-            }
-        }
-        function resetarCampos() {
-            document.getElementById('nome_produto').innerText = 'Aguardando busca...';
-            document.getElementById('estoque_atual').innerText = '-';
-        }
-    </script>
+    <div class="container">
+        <h1>Entrada de Estoque</h1>
+        {% if msg %}
+            <div class="msg">{{ msg }}</div>
+        {% endif %}
+        <form method="POST">
+            <div class="form-group">
+                <label>Código de Barras ou ID do Produto</label>
+                <input type="text" name="identificador" required autofocus>
+            </div>
+            <div class="form-group">
+                <label>Quantidade a Adicionar</label>
+                <input type="number" name="quantidade" value="1" min="1" required>
+            </div>
+            <button type="submit">Confirmar Entrada</button>
+        </form>
+    </div>
 </body>
 </html>
 """
+
+HTML_FECHAMENTO = """
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Grupo Yamasaki - Fechamento de Caixa</title>
+    <style>
+        body { background: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #3b82f6; }
+        .nav-links a { color: #60a5fa; text-decoration: none; margin-left: 15px; font-weight: 600; }
+        .container { max-width: 900px; margin: 0 auto; }
+        h1 { color: #60a5fa; }
+        .cards { display: flex; gap: 20px; margin-bottom: 30px; }
+        .card { background: #1e293b; flex: 1; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border-left: 4px solid #10b981; }
+        .card h3 { margin: 0 0 10px 0; color: #94a3b8; font-size: 14px; }
+        .card .value { font-size: 24px; font-weight: bold; color: #fff; }
+        .section { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
+        th { color: #60a5fa; }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <div><strong>Operador:</strong> {{ usuario }}</div>
+        <div class="nav-links">
+            <a href="/">Caixa (Venda)</a>
+            <a href="/estoque/entrada">Entrada de Estoque</a>
+            <a href="/relatorio/fechamento">📊 Fechamento de Caixa</a>
+            <a href="/logout" style="color: #f87171;">Sair</a>
+        </div>
+    </div>
+    <div class="container">
+        <h1>Fechamento de Caixa Diário</h1>
+        <div class="cards">
+            <div class="card">
+                <h3>Faturamento Total Hoje</h3>
+                <div class="value">R$ {{ "%.2f"|format(faturado) }}</div>
+            </div>
+            <div class="card" style="border-left-color: #3b82f6;">
+                <h3>Total de Vendas Realizadas</h3>
+                <div class="value">{{ vendas }}</div>
+            </div>
+        </div>
+
+        <div class="section">
+            <h3 style="color: #60a5fa; margin-top: 0;">Vendas por Forma de Pagamento</h3>
+            <table>
+                <tr><th>Forma de Pagamento</th><th>Total Arrecadado</th></tr>
+                {% for pag in pagamentos %}
+                <tr><td>{{ pag[0] }}</td><td>R$ {{ "%.2f"|format(pag[1]) }}</td></tr>
+                {% else %}
+                <tr><td colspan="2" style="color: #64748b;">Nenhuma venda registrada hoje.</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+
+        <div class="section">
+            <h3 style="color: #60a5fa; margin-top: 0;">Vendas por Operador</h3>
+            <table>
+                <tr><th>Operador</th><th>Qtd. Vendas</th><th>Total Faturado</th></tr>
+                {% for op in operadores %}
+                <tr><td>{{ op[0] }}</td><td>{{ op[2] }}</td><td>R$ {{ "%.2f"|format(op[1]) }}</td></tr>
+                {% else %}
+                <tr><td colspan="3" style="color: #64748b;">Nenhum registro de operador hoje.</td></tr>
+                {% endfor %}
+            </table>
+        </div>
+    </div>
+</body>
+</html>
+"""
+
+# --- ROTAS DO SISTEMA ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -394,6 +293,7 @@ def login():
 def logout():
     session.pop('usuario', None)
     return redirect(url_for('login'))
+
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if 'usuario' not in session:
@@ -404,6 +304,7 @@ def index():
         identificador = request.form.get('identificador', '').strip()
         quantidade = int(request.form.get('quantidade', 1))
         forma_pagamento = request.form.get('forma_pagamento', 'Dinheiro')
+        operador_atual = session.get('usuario', 'Desconhecido')
 
         conn = conectar_banco()
         cur = conn.cursor()
@@ -428,13 +329,13 @@ def index():
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
+            # Insere na tabela de vendas com operador
             cur.execute(
-                "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade) VALUES (NOW(), %s, %s, %s, %s);",
-                (total_venda, forma_pagamento, nome_produto, quantidade)
+                "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade, operador) VALUES (NOW(), %s, %s, %s, %s, %s);",
+                (total_venda, forma_pagamento, nome_produto, quantidade, operador_atual)
             )
             
-            operador_atual = session.get('usuario', 'Desconhecido')
-
+            # Insere no log de auditoria (produtobkp) com operador
             cur.execute(
                 "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'VENDA', %s);",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
@@ -497,6 +398,8 @@ def entrada_estoque():
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip()
         quantidade = int(request.form.get('quantidade', 0))
+        operador_atual = session.get('usuario', 'Desconhecido')
+
         conn = conectar_banco()
         cur = conn.cursor()
         try:
@@ -519,8 +422,6 @@ def entrada_estoque():
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
-            operador_atual = session.get('usuario', 'Desconhecido')
-            
             cur.execute(
                 "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'ENTRADA', %s);",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
@@ -535,6 +436,35 @@ def entrada_estoque():
             cur.close()
             conn.close()
     return render_template_string(HTML_ESTOQUE, msg=mensagem, usuario=session['usuario'])
+
+@app.route('/relatorio/fechamento')
+def fechamento_caixa():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+
+    conn = conectar_banco()
+    cur = conn.cursor()
+    try:
+        cur.execute("SELECT COALESCE(SUM(total), 0), COUNT(*) FROM vendas WHERE DATE(data_venda) = CURRENT_DATE;")
+        res_geral = cur.fetchone()
+        total_faturado = res_geral[0]
+        total_vendas = res_geral[1]
+
+        cur.execute("SELECT forma_pagamento, COALESCE(SUM(total), 0) FROM vendas WHERE DATE(data_venda) = CURRENT_DATE GROUP BY forma_pagamento;")
+        por_pagamento = cur.fetchall()
+
+        cur.execute("SELECT operador, COALESCE(SUM(total), 0), COUNT(*) FROM vendas WHERE DATE(data_venda) = CURRENT_DATE GROUP BY operador;")
+        por_operador = cur.fetchall()
+    finally:
+        cur.close()
+        conn.close()
+
+    return render_template_string(HTML_FECHAMENTO, 
+                                 faturado=total_faturado, 
+                                 vendas=total_vendas, 
+                                 pagamentos=por_pagamento, 
+                                 operadores=por_operador,
+                                 usuario=session['usuario'])
 
 if __name__ == '__main__':
     app.run(debug=True)
