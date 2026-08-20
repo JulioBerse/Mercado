@@ -232,6 +232,121 @@ HTML_CAIXA = """
 </body>
 </html>
 """
+
+HTML_ESTOQUE = """
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Entrada de Estoque - Grupo Yamasaki</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; }
+        .card { background: #ffffff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
+        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
+        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
+        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #fff; }
+        input:focus { border-color: #28a745; outline: none; }
+        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #218838; }
+        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px; }
+        .info-row strong { color: #333; }
+        .msg { margin-top: 20px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; }
+        .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
+        .msg-erro { background: #ffebee; color: #c62828; }
+        .nav-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-weight: bold; }
+        .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; }
+        .brand-header h2 { color: #007bff; margin: 0; font-size: 20px; font-weight: bold; }
+        .user-info { font-size: 13px; color: #555; text-align: right; }
+        .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
+        .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
+    </style>
+</head>
+<body>
+  <div class="card">
+        <div style="text-align: center; margin-bottom: 15px;">
+            <div style="display: inline-block; width: 40px; height: 40px; background-color: #bc002d; border-radius: 50%; line-height: 40px; color: white; font-weight: bold; font-size: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 4px;">山</div>
+            <h2 style="color: #1a1a1a; font-size: 18px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
+            <span style="color: #666; font-size: 10px; letter-spacing: 3px; text-transform: uppercase;">山崎グループ</span>
+        </div>
+        <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 15px;">
+
+        <div class="brand-header">
+            <h2>📦 Gerenciamento de Estoque</h2>
+            <div class="user-info">
+                Operador: <strong>{{ usuario }}</strong> <a href="/logout">[Sair]</a>
+            </div>
+        </div>
+        <a class="nav-link" href="/">← Voltar para o Caixa</a>
+
+        <form method="POST">
+            <label for="identificador">Código de Barras ou ID:</label>
+            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProdutoEstoque()" onkeydown="tratarTeclaIdentificadorEstoque(event)">
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span>Produto:</span>
+                    <strong id="nome_produto">Aguardando busca...</strong>
+                </div>
+                <div class="info-row">
+                    <span>Estoque Atual:</span>
+                    <strong id="estoque_atual">-</strong>
+                </div>
+            </div>
+
+            <label for="quantidade">Quantidade a Adicionar / Retirar (ex: 10 ou -10):</label>
+            <input type="number" id="quantidade" name="quantidade" value="1" required>
+
+            <button type="submit">Atualizar Estoque</button>
+        </form>
+
+        {% if msg %}
+            <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
+        {% endif %}
+
+        <div class="footer-system">
+            Powered by <strong>Yamasaki Technology Solution</strong> 🚀
+        </div>
+    </div>
+
+    <script>
+        async function buscarProdutoEstoque() {
+            const identificador = document.getElementById('identificador').value.trim();
+            if (!identificador) { resetarCampos(); return false; }
+            try {
+                const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
+                const data = await response.json();
+                if (data.sucesso) {
+                    document.getElementById('nome_produto').innerText = data.nome;
+                    document.getElementById('estoque_atual').innerText = data.estoque;
+                    return true;
+                } else {
+                    document.getElementById('nome_produto').innerText = 'Produto não encontrado';
+                    document.getElementById('estoque_atual').innerText = '-';
+                    return false;
+                }
+            } catch (e) { resetarCampos(); return false; }
+        }
+
+        async function tratarTeclaIdentificadorEstoque(e) {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                const achou = await buscarProdutoEstoque();
+                if (achou) {
+                    const campoQtd = document.getElementById('quantidade');
+                    campoQtd.focus();
+                    campoQtd.select();
+                }
+            }
+        }
+        function resetarCampos() {
+            document.getElementById('nome_produto').innerText = 'Aguardando busca...';
+            document.getElementById('estoque_atual').innerText = '-';
+        }
+    </script>
+</body>
+</html>
+"""
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     mensagem = None
