@@ -83,23 +83,21 @@ HTML_CAIXA = """
     </style>
  </head>
 <body>
-    <div style="text-align: center; margin: 15px 0 25px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-    <!-- Símbolo 山 maior e destacado -->
-    <div style="display: inline-block; width: 60px; height: 60px; background-color: #bc002d; border-radius: 50%; line-height: 60px; color: white; font-weight: bold; font-size: 26px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); margin-bottom: 12px;">
+    <div style="text-align: center; margin: 10px auto 20px auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 300px;">
+    <!-- Círculo Minimalista -->
+    <div style="display: inline-block; width: 50px; height: 50px; background-color: #bc002d; border-radius: 50%; line-height: 50px; color: white; font-weight: bold; font-size: 22px; box-shadow: 0 3px 6px rgba(0,0,0,0.1); margin-bottom: 8px;">
         山
     </div>
-    <!-- Nome do Mercado maior -->
-    <h1 style="color: #1a1a1a; font-size: 26px; font-weight: 800; letter-spacing: 3px; margin: 0;">
+    <!-- Título Principal -->
+    <h1 style="color: #1a1a1a; font-size: 22px; font-weight: 700; letter-spacing: 2.5px; margin: 0;">
         GRUPO YAMASAKI
     </h1>
-    <!-- Subtítulo refinado -->
-    <span style="color: #555; font-size: 14px; letter-spacing: 5px; text-transform: uppercase; font-weight: 600;">
+    <!-- Subtítulo em Kanji -->
+    <span style="color: #666; font-size: 12px; letter-spacing: 4px; text-transform: uppercase; font-weight: 600; display: block; margin-top: 2px;">
         山崎グループ
     </span>
 </div>
-<hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 25px;">
-</div>
-<hr style="border: none; height: 1px; background: #e0e0e0; margin: 20px 0;">
+<hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 25px; margin-top: 10px;">
 
  <div class="card">
         <div class="brand-header">
@@ -234,22 +232,21 @@ HTML_ESTOQUE = """
     </style>
 </head>
 <body>
-<div style="text-align: center; margin: 15px 0 25px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
-    <!-- Símbolo 山 maior e destacado -->
-    <div style="display: inline-block; width: 60px; height: 60px; background-color: #bc002d; border-radius: 50%; line-height: 60px; color: white; font-weight: bold; font-size: 26px; box-shadow: 0 4px 8px rgba(0,0,0,0.15); margin-bottom: 12px;">
+<div style="text-align: center; margin: 10px auto 20px auto; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; max-width: 300px;">
+    <!-- Círculo Minimalista -->
+    <div style="display: inline-block; width: 50px; height: 50px; background-color: #bc002d; border-radius: 50%; line-height: 50px; color: white; font-weight: bold; font-size: 22px; box-shadow: 0 3px 6px rgba(0,0,0,0.1); margin-bottom: 8px;">
         山
     </div>
-    <!-- Nome do Mercado maior -->
-    <h1 style="color: #1a1a1a; font-size: 26px; font-weight: 800; letter-spacing: 3px; margin: 0;">
+    <!-- Título Principal -->
+    <h1 style="color: #1a1a1a; font-size: 22px; font-weight: 700; letter-spacing: 2.5px; margin: 0;">
         GRUPO YAMASAKI
     </h1>
-    <!-- Subtítulo refinado -->
-    <span style="color: #555; font-size: 14px; letter-spacing: 5px; text-transform: uppercase; font-weight: 600;">
+    <!-- Subtítulo em Kanji -->
+    <span style="color: #666; font-size: 12px; letter-spacing: 4px; text-transform: uppercase; font-weight: 600; display: block; margin-top: 2px;">
         山崎グループ
     </span>
 </div>
-<hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 25px;">
-</div>
+<hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 25px; margin-top: 10px;">
 <hr style="border: none; height: 1px; background: #e0e0e0; margin: 20px 0;">
   <div class="card">
         <div class="brand-header">
