@@ -363,6 +363,37 @@ HTML_ESTOQUE = """
 </body>
 </html>
 """
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    mensagem = None
+    if request.method == 'POST':
+        username = request.form.get('username', '').strip()
+        password = request.form.get('password', '').strip()
+
+        conn = conectar_banco()
+        cur = conn.cursor()
+        try:
+            cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE login = %s AND senha = %s;", (username, password))
+            usuario = cur.fetchone()
+            
+            if usuario:
+                session['usuario'] = username
+                return redirect(url_for('index'))
+            else:
+                mensagem = "Usuário ou senha inválidos!"
+        except Exception as e:
+            mensagem = f"Erro no login: {e}"
+        finally:
+            cur.close()
+            conn.close()
+
+    return render_template_string(HTML_LOGIN, msg=mensagem)
+
+@app.route('/logout')
+def logout():
+    session.pop('usuario', None)
+    return redirect(url_for('login'))
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if 'usuario' not in session:
