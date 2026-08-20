@@ -65,7 +65,10 @@ HTML_CAIXA = """
         .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #3b82f6; }
         .nav-links a { color: #60a5fa; text-decoration: none; margin-left: 15px; font-weight: 600; }
         .nav-links a:hover { text-decoration: underline; }
-        .container { max-width: 800px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
+        .container { max-width: 900px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); display: flex; gap: 30px; }
+        .form-section { flex: 1; }
+        .qr-section { width: 250px; background: #0f172a; padding: 20px; border-radius: 8px; text-align: center; display: none; border: 1px dashed #3b82f6; }
+        .qr-section img { width: 100%; max-height: 200px; object-fit: contain; border-radius: 4px; margin-top: 10px; background: #fff; padding: 5px; }
         h1 { color: #60a5fa; margin-top: 0; }
         .form-group { margin-bottom: 20px; }
         label { display: block; margin-bottom: 8px; font-weight: 600; color: #94a3b8; }
@@ -75,7 +78,7 @@ HTML_CAIXA = """
         .msg { padding: 12px; background: #065f46; color: #d1fae5; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold; }
         #info_produto { color: #fbbf24; font-size: 14px; margin-top: 5px; }
     </style>
-  <script>
+    <script>
         function buscarProduto() {
             let id = document.getElementById('identificador').value.trim();
             let infoDiv = document.getElementById('info_produto');
@@ -93,6 +96,16 @@ HTML_CAIXA = """
                 infoDiv.innerText = "";
             }
         }
+
+        function verificarPagamento() {
+            let forma = document.getElementById('forma_pagamento').value;
+            let qrBox = document.getElementById('qr_box');
+            if (forma === 'Pix') {
+                qrBox.style.display = 'block';
+            } else {
+                qrBox.style.display = 'none';
+            }
+        }
     </script>
 </head>
 <body>
@@ -106,31 +119,41 @@ HTML_CAIXA = """
         </div>
     </div>
     <div class="container">
-        <h1>Frente de Caixa - PDV</h1>
-        {% if msg %}
-            <div class="msg">{{ msg }}</div>
-        {% endif %}
-        <form method="POST">
-            <div class="form-group">
-                <label>Código de Barras ou ID do Produto</label>
-                <input type="text" id="identificador" name="identificador" onkeyup="buscarProduto()" required autofocus>
-                <div id="info_produto"></div>
-            </div>
-            <div class="form-group">
-                <label>Quantidade</label>
-                <input type="number" name="quantidade" value="1" min="1" required>
-            </div>
-            <div class="form-group">
-                <label>Forma de Pagamento</label>
-                <select name="forma_pagamento">
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="Pix">Pix</option>
-                    <option value="Cartão de Crédito">Cartão de Crédito</option>
-                    <option value="Cartão de Débito">Cartão de Débito</option>
-                </select>
-            </div>
-            <button type="submit">Finalizar Venda</button>
-        </form>
+        <div class="form-section">
+            <h1>Frente de Caixa - PDV</h1>
+            {% if msg %}
+                <div class="msg">{{ msg }}</div>
+            {% endif %}
+            <form method="POST">
+                <div class="form-group">
+                    <label>Código de Barras ou ID do Produto</label>
+                    <input type="text" id="identificador" name="identificador" onkeyup="buscarProduto()" required autofocus>
+                    <div id="info_produto"></div>
+                </div>
+                <div class="form-group">
+                    <label>Quantidade</label>
+                    <input type="number" name="quantidade" value="1" min="1" required>
+                </div>
+                <div class="form-group">
+                    <label>Forma de Pagamento</label>
+                    <select name="forma_pagamento" id="forma_pagamento" onchange="verificarPagamento()">
+                        <option value="Dinheiro">Dinheiro</option>
+                        <option value="Pix">Pix</option>
+                        <option value="Cartão de Crédito">Cartão de Crédito</option>
+                        <option value="Cartão de Débito">Cartão de Débito</option>
+                    </select>
+                </div>
+                <button type="submit">Finalizar Venda</button>
+            </form>
+        </div>
+
+        <div class="qr-section" id="qr_box">
+            <h3 style="color: #60a5fa; margin-top: 0; font-size: 16px;">Pagamento via Pix</h3>
+            <p style="font-size: 13px; color: #94a3b8;">Escaneie o QR Code abaixo:</p>
+            <!-- Substitua o link da imagem abaixo pelo link direto ou caminho do QR Code da sua chave Pix -->
+            <img src="https://via.placeholder.com/200?text=QR+Code+Pix" alt="QR Code Pix">
+            <p style="font-size: 12px; color: #fbbf24; margin-top: 10px;">Grupo Yamasaki</p>
+        </div>
     </div>
 </body>
 </html>
