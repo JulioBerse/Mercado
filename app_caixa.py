@@ -433,6 +433,17 @@ def index():
                 (total_venda, forma_pagamento, nome_produto, quantidade)
             )
             
+            operador_atual = session.get('usuario', 'Desconhecido')
+
+            cur.execute(
+                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'VENDA', %s);",
+                (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
+            )
+            
+            
+            
+            
+            
             # ATUALIZADO: Adicionado 'VENDA' no bkp
             cur.execute(
                 "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao) VALUES (%s, %s, %s, %s, %s, NOW(), 'VENDA');",
@@ -517,6 +528,16 @@ def entrada_estoque():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s;", (quantidade, identificador))
+            
+               operador_atual = session.get('usuario', 'Desconhecido')
+
+            cur.execute(
+                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'ENTRADA', %s);",
+                (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
+            )
+            
+            
+            
             
             # ATUALIZADO: Adicionado 'ENTRADA' no bkp
             cur.execute(
