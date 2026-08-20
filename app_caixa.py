@@ -81,7 +81,9 @@ HTML_CAIXA = """
         .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
         .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
     </style>
-        <div style="text-align: center; margin: 20px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+ </head>
+<body>
+           <div style="text-align: center; margin: 20px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
     <!-- Círculo minimalista inspirado na bandeira/sol nascente, com detalhe em vermelho -->
     <div style="display: inline-block; width: 45px; height: 45px; background-color: #bc002d; border-radius: 50%; line-height: 45px; color: white; font-weight: bold; font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 8px;">
         山
@@ -97,10 +99,7 @@ HTML_CAIXA = """
 </div>
 <hr style="border: none; height: 1px; background: #e0e0e0; margin: 20px 0;">
 
-    
-</head>
-<body>
-    <div class="card">
+ <div class="card">
         <div class="brand-header">
             <h2>🏪 GRUPO YAMASAKI</h2>
             <div class="user-info">
@@ -231,7 +230,10 @@ HTML_ESTOQUE = """
         .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
         .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
     </style>
-    <div style="text-align: center; margin: 20px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
+</head>
+<body>
+
+               <div style="text-align: center; margin: 20px 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;">
     <!-- Círculo minimalista inspirado na bandeira/sol nascente, com detalhe em vermelho -->
     <div style="display: inline-block; width: 45px; height: 45px; background-color: #bc002d; border-radius: 50%; line-height: 45px; color: white; font-weight: bold; font-size: 20px; box-shadow: 0 4px 6px rgba(0,0,0,0.1); margin-bottom: 8px;">
         山
@@ -246,13 +248,7 @@ HTML_ESTOQUE = """
     </span>
 </div>
 <hr style="border: none; height: 1px; background: #e0e0e0; margin: 20px 0;">
-    
-
-
-    
-</head>
-<body>
-    <div class="card">
+  <div class="card">
         <div class="brand-header">
             <h2>🏪 GRUPO YAMASAKI</h2>
             <div class="user-info">
