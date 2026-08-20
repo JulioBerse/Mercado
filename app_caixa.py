@@ -1,6 +1,8 @@
 import os
 import psycopg2
 from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
+from datetime import datetime
+
 
 app = Flask(__name__)
 app.secret_key = "chave_secreta_super_segura_berse"
