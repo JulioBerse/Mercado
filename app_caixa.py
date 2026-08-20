@@ -363,18 +363,41 @@ def index():
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
-            # 3. Registra na tabela de vendas
-            cur.execute(
-                "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade) VALUES (NOW(), %s, %s, %s, %s);",
-                (total_venda, forma_pagamento, nome_produto, quantidade)
-            )
+      # ... (código anterior)
             
-      # Inserção correta na tabela produtobkp
+            # 3. Registra na tabela de vendas
+            cur.execute("INSERT INTO vendas ...")
+            
+            # TESTE DE DEBUG
+            print(">>> TENTANDO INSERIR NA PRODUTOBKP...")
+            
             cur.execute(
                 """INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) 
                    VALUES (%s, %s, %s, %s, %s, NOW());""",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade)
             )
+            
+            print(">>> INSERÇÃO NA PRODUTOBKP EXECUTADA COM SUCESSO!")
+            conn.commit()
+            
+            # ... (código restante)# ... (código anterior)
+            
+            # 3. Registra na tabela de vendas
+            cur.execute("INSERT INTO vendas ...")
+            
+            # TESTE DE DEBUG
+            print(">>> TENTANDO INSERIR NA PRODUTOBKP...")
+            
+            cur.execute(
+                """INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) 
+                   VALUES (%s, %s, %s, %s, %s, NOW());""",
+                (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade)
+            )
+            
+            print(">>> INSERÇÃO NA PRODUTOBKP EXECUTADA COM SUCESSO!")
+            conn.commit()
+            
+            # ... (código restante)
 
             conn.commit()
             mensagem = f"Venda realizada com sucesso! ({quantidade}x {nome_produto} - R$ {total_venda:.2f})"
