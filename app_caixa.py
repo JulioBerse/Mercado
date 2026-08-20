@@ -355,20 +355,58 @@ HTML_ESTOQUE = """
 
 HTML_FECHAMENTO = """
 <!DOCTYPE html>
-<html>
+<html lang="pt-br">
 <head>
-    <title>Fechamento de Caixa</title>
+    <meta charset="UTF-8">
+    <title>Fechamento de Caixa - Grupo Yamasaki</title>
     <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
     <style>
-        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
-        .card { background: white; padding: 20px; border-radius: 12px; max-width: 600px; margin: auto; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f2f5; padding: 20px; display: flex; justify-content: center; }
+        .card { background: white; padding: 30px; border-radius: 12px; max-width: 600px; width: 100%; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #1a1a1a; text-align: center; margin-top: 0; font-size: 22px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        .chart-container { width: 280px; margin: 20px auto; }
+        h3 { color: #333; font-size: 16px; margin-top: 30px; border-bottom: 1px solid #eee; padding-bottom: 5px; }
+        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #f0f2f5; font-size: 14px; }
+        th { color: #666; font-weight: 600; background: #f8f9fa; }
+        td { color: #333; }
+        .nav-link { display: inline-block; margin-top: 25px; color: #007bff; text-decoration: none; font-weight: bold; }
+        .nav-link:hover { text-decoration: underline; }
     </style>
 </head>
 <body>
     <div class="card">
         <h2>📊 Fechamento de Caixa - Hoje</h2>
-        <canvas id="meuGrafico"></canvas>
-        <a href="/">← Voltar ao Caixa</a>
+        
+        <div class="chart-container">
+            <canvas id="meuGrafico"></canvas>
+        </div>
+
+        <h3>👥 Vendas por Operador (Hoje)</h3>
+        <table>
+            <thead>
+                <tr>
+                    <th>Operador</th>
+                    <th>Qtd. Vendas</th>
+                    <th>Total Vendido</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for v in vendedores %}
+                <tr>
+                    <td><strong>{{ v[0] }}</strong></td>
+                    <td>{{ v[2] }}x</td>
+                    <td style="color: #28a745; font-weight: bold;">R$ {{ "%.2f"|format(v[1]) }}</td>
+                </tr>
+                {% else %}
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #888;">Nenhuma venda registrada hoje.</td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+
+        <a class="nav-link" href="/">← Voltar ao Caixa</a>
     </div>
 
     <script>
@@ -379,15 +417,18 @@ HTML_FECHAMENTO = """
                 labels: {{ labels | tojson }},
                 datasets: [{
                     data: {{ valores | tojson }},
-                    backgroundColor: ['#007bff', '#28a745', '#ffc107']
+                    backgroundColor: ['#007bff', '#28a745', '#ffc107', '#dc3545', '#17a2b8']
                 }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false
             }
         });
     </script>
 </body>
 </html>
 """
-
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     mensagem = None
@@ -562,7 +603,6 @@ def estoque_entrada():
     return render_template_string(HTML_ESTOQUE, usuario=operador_atual, msg=mensagem)
     # ... (suas outras rotas como @app.route('/login') e @app.route('/'))
 
-# 1. COLE AQUI A NOVA ROTA
 @app.route('/fechamento')
 def fechamento():
     if 'usuario' not in session:
@@ -570,23 +610,34 @@ def fechamento():
     
     conn = conectar_banco()
     cur = conn.cursor()
-    # Busca vendas do dia atual
+    
+    # 1. Busca vendas por forma de pagamento (para o gráfico)
     cur.execute("""
         SELECT forma_pagamento, SUM(total) as soma 
         FROM vendas 
         WHERE data_venda::date = CURRENT_DATE 
         GROUP BY forma_pagamento
     """)
-    dados = cur.fetchall()
+    dados_grafico = cur.fetchall()
+    
+    # 2. Busca total de vendas por operador (vendedor) no dia
+    cur.execute("""
+        SELECT operador, SUM(total) as total_vendido, COUNT(*) as qtd_vendas
+        FROM vendas 
+        WHERE data_venda::date = CURRENT_DATE 
+        GROUP BY operador
+        ORDER BY total_vendido DESC
+    """)
+    dados_vendedores = cur.fetchall()
+    
     cur.close()
     conn.close()
     
     # Formata para o Chart.js
-    labels = [d[0] for d in dados]
-    valores = [float(d[1]) for d in dados]
+    labels = [d[0] for d in dados_grafico]
+    valores = [float(d[1]) for d in dados_grafico]
     
-    return render_template_string(HTML_FECHAMENTO, labels=labels, valores=valores)
-
+    return render_template_string(HTML_FECHAMENTO, labels=labels, valores=valores, vendedores=dados_vendedores)
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
