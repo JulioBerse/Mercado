@@ -369,10 +369,11 @@ def index():
                 (total_venda, forma_pagamento, nome_produto, quantidade)
             )
             
-            # 4. Popula a tabela produtobkp com os dados exatos do seu banco
+      # Inserção correta na tabela produtobkp
             cur.execute(
-                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) VALUES (%s, %s, %s, %s, %s, NOW());",
-                (id, produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento)
+                """INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) 
+                   VALUES (%s, %s, %s, %s, %s, NOW());""",
+                (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade)
             )
 
             conn.commit()
