@@ -363,37 +363,6 @@ HTML_ESTOQUE = """
 </body>
 </html>
 """
-@app.route('/login', methods=['GET', 'POST'])
-def login():
-    mensagem = None
-    if request.method == 'POST':
-        username = request.form.get('username', '').strip()
-        password = request.form.get('password', '').strip()
-
-        conn = conectar_banco()
-        cur = conn.cursor()
-        try:
-            cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE login = %s AND senha = %s;", (username, password))
-            usuario = cur.fetchone()
-            
-            if usuario:
-                session['usuario'] = username
-                return redirect(url_for('index'))
-            else:
-                mensagem = "Usuário ou senha inválidos!"
-        except Exception as e:
-            mensagem = f"Erro no login: {e}"
-        finally:
-            cur.close()
-            conn.close()
-
-    return render_template_string(HTML_LOGIN, msg=mensagem)
-
-@app.route('/logout')
-def logout():
-    session.pop('usuario', None)
-    return redirect(url_for('login'))
-
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if 'usuario' not in session:
@@ -433,8 +402,9 @@ def index():
                 (total_venda, forma_pagamento, nome_produto, quantidade)
             )
             
+            # ATUALIZADO: Adicionado 'VENDA' no bkp
             cur.execute(
-                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) VALUES (%s, %s, %s, %s, %s, NOW());",
+                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao) VALUES (%s, %s, %s, %s, %s, NOW(), 'VENDA');",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade)
             )
 
@@ -448,42 +418,6 @@ def index():
             conn.close()
 
     return render_template_string(HTML_CAIXA, msg=mensagem, usuario=session['usuario'])
-@app.route('/buscar_produto')
-def buscar_produto():
-    if 'usuario' not in session:
-        return jsonify({'sucesso': False})
-    q = request.args.get('q', '').strip()
-    conn = conectar_banco()
-    cur = conn.cursor()
-    try:
-        if q.isdigit():
-            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s;", (int(q),))
-        else:
-            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (q,))
-        produto = cur.fetchone()
-        if produto:
-            return jsonify({'sucesso': True, 'nome': produto[0], 'preco': float(produto[1]), 'estoque': produto[2]})
-        return jsonify({'sucesso': False})
-    finally:
-        cur.close()
-        conn.close()
-
-@app.route('/api/produto/<identificador>')
-def api_produto(identificador):
-    if 'usuario' not in session:
-        return jsonify({'encontrado': False})
-    conn = conectar_banco()
-    cur = conn.cursor()
-    try:
-        if identificador.isdigit():
-            cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
-        else:
-            cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
-        produto = cur.fetchone()
-        return jsonify({'encontrado': bool(produto), 'nome': produto[0] if produto else ""})
-    finally:
-        cur.close()
-        conn.close()
 
 @app.route('/estoque/entrada', methods=['GET', 'POST'])
 def entrada_estoque():
@@ -497,7 +431,6 @@ def entrada_estoque():
         conn = conectar_banco()
         cur = conn.cursor()
         try:
-            # 1. Busca os dados do produto para garantir que ele existe e pegar o ID, nome e preço atual
             if identificador.isdigit():
                 cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
             else:
@@ -512,15 +445,14 @@ def entrada_estoque():
             nome_produto = produto[2]
             preco_unitario = float(produto[3])
 
-            # 2. Atualiza o estoque somando a quantidade
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
-            # 3. Registra também na tabela produtobkp a entrada de mercadoria
+            # ATUALIZADO: Adicionado 'ENTRADA' no bkp
             cur.execute(
-                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) VALUES (%s, %s, %s, %s, %s, NOW());",
+                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao) VALUES (%s, %s, %s, %s, %s, NOW(), 'ENTRADA');",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade)
             )
 
@@ -533,6 +465,3 @@ def entrada_estoque():
             cur.close()
             conn.close()
     return render_template_string(HTML_ESTOQUE, msg=mensagem, usuario=session['usuario'])
-    
-if __name__ == '__main__':
-    app.run(debug=True)
