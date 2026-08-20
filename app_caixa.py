@@ -1,80 +1,238 @@
-from flask import Flask, render_template_string, request, redirect, url_for, session, jsonify
-import psycopg2
 import os
 import psycopg2
-from datetime import datetime
+from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
 
 app = Flask(__name__)
-app.secret_key = 'sua_chave_secreta_aqui'
-app.secret_key = 'segredo_grupo_yamasaki'
+app.secret_key = "chave_secreta_super_segura_berse"
+
+TABELA_PRODUTO = "produto"
+TABELA_USUARIO = "usuario"
 
 def conectar_banco():
-    return psycopg2.connect(os.environ.get('DATABASE_URL'))
+    db_url = os.environ.get('DATABASE_URL')
+    return psycopg2.connect(db_url)
 
-TABELA_USUARIO = "usuario"
-TABELA_PRODUTO = "produto"
-def get_db_connection():
-    return psycopg2.connect(os.environ.get("DATABASE_URL"))
-
-# --- TEMPLATES HTML ---
-
-@@ -21,34 +19,33 @@ def conectar_banco():
-    <title>Grupo Yamasaki - Login</title>
-    <style>
-        body { background: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; display: flex; justify-content: center; align-items: center; height: 100vh; margin: 0; }
-        .login-card { background: #1e293b; padding: 40px; border-radius: 12px; box-shadow: 0 10px 25px rgba(0,0,0,0.3); width: 100%; max-width: 400px; border-top: 4px solid #3b82f6; }
-        h2 { text-align: center; margin-bottom: 24px; color: #60a5fa; }
-        .form-group { margin-bottom: 16px; }
-        label { display: block; margin-bottom: 8px; font-size: 14px; color: #94a3b8; }
-        input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; }
-        input:focus { border-color: #3b82f6; outline: none; }
-        button { width: 100%; padding: 12px; background: #3b82f6; border: none; border-radius: 6px; color: white; font-weight: bold; cursor: pointer; margin-top: 10px; transition: background 0.2s; }
-        .login-card { background: #1e293b; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.4); width: 100%; max-width: 400px; border-top: 4px solid #3b82f6; }
-        h2 { color: #60a5fa; text-align: center; margin-top: 0; }
-        .form-group { margin-bottom: 20px; }
-        label { display: block; margin-bottom: 8px; font-weight: 600; color: #94a3b8; }
-        input { width: 100%; padding: 12px; border-radius: 6px; border: 1px solid #334155; background: #0f172a; color: #fff; box-sizing: border-box; font-size: 16px; }
-        button { background: #3b82f6; color: white; border: none; padding: 14px; width: 100%; font-size: 16px; font-weight: bold; border-radius: 6px; cursor: pointer; transition: background 0.2s; }
-        button:hover { background: #2563eb; }
-        .error { color: #f87171; font-size: 14px; text-align: center; margin-top: 12px; }
-        .error { color: #f87171; text-align: center; margin-bottom: 15px; font-size: 14px; }
-    </style>
+HTML_LOGIN = """
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+   <meta charset="UTF-8">
+   <title>Login - Grupo Yamasaki PDV</title>
+   <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; }
+        .login-card { background: #ffffff; width: 100%; max-width: 400px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h2 { color: #007bff; text-align: center; margin-top: 0; }
+        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
+        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; }
+        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        .msg { margin-top: 15px; padding: 10px; border-radius: 6px; font-weight: bold; text-align: center; background: #ffebee; color: #c62828; }
+   </style>
 </head>
 <body>
-    <div class="login-card">
-        <h2>Grupo Yamasaki</h2>
-        {% if error %}
-            <div class="error">{{ error }}</div>
-        {% endif %}
+   <div class="login-card">
+        <h2>🏪 GRUPO YAMASAKI</h2>
+        <p style="text-align: center; color: #666; font-size: 14px;">Faça login para acessar o PDV</p>
+        
         <form method="POST">
-            <div class="form-group">
-                <label>Usuário</label>
-                <input type="text" name="username" required autofocus>
-                <label>Usuário / Operador</label>
-                <input type="text" name="usuario" required autofocus>
-            </div>
-            <div class="form-group">
-                <label>Senha</label>
-                <input type="password" name="password" required>
-                <input type="password" name="senha" required>
-            </div>
-            <button type="submit">Entrar no Sistema</button>
+            <label for="username">Usuário:</label>
+            <input type="text" id="username" name="username" required autofocus>
+            
+            <label for="password">Senha:</label>
+            <input type="password" id="password" name="password" required>
+            
+            <button type="submit">Entrar</button>
         </form>
+
         {% if msg %}
-            <div class="error">{{ msg }}</div>
+            <div class="msg">{{ msg }}</div>
         {% endif %}
-    </div>
+   </div>
 </body>
 </html>
-@@ -170,13 +167,14 @@ def conectar_banco():
-        <div class="qr-section" id="qr_box">
-            <h3 style="color: #60a5fa; margin-top: 0; font-size: 16px;">Pagamento via Pix</h3>
-            <p style="font-size: 13px; color: #94a3b8;">Escaneie a chave:</p>
-            <!-- QR Code gerado automaticamente com a sua chave Pix -->
-            <img src="https://api.qrserver.com/v1/create-qr-code/?size=200x200&data=py9dm.mt@gmail.com" alt="QR Code Pix py9dm.mt@gmail.com">
-            <p style="font-size: 12px; color: #fbbf24; margin-top: 10px;">Chave: py9dm.mt@gmail.com<br><b>Grupo Yamasaki</b></p>
-        </div>
-    </div>
+"""
+
+HTML_CAIXA = """
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+   <meta charset="UTF-8">
+   <title>Berse Supermercados - PDV</title>
+   <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            min-height: 100vh;
+            background-color: #f0f2f5;
+            background-image: 
+                linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+                linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+            background-size: 20px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            box-sizing: border-box;
+        }
+        
+        .main-container { display: flex; gap: 20px; align-items: flex-start; max-width: 1000px; width: 100%; justify-content: center; }
+        
+        .pix-card { background: #ffffff; width: 100%; max-width: 350px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; text-align: center; }
+        .pix-card h3 { color: #007bff; margin-top: 0; font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 8px; }
+
+        .card { background: #ffffff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
+        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
+        input, select { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #fff; }
+        input:focus, select:focus { border-color: #007bff; outline: none; }
+        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #0056b3; }
+        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px; }
+        .info-row strong { color: #333; }
+        .total-box { font-size: 20px; color: #28a745; border-top: 2px solid #28a745; padding-top: 10px; margin-top: 10px; }
+        .msg { margin-top: 20px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; }
+        .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
+        .msg-erro { background: #ffebee; color: #c62828; }
+        .nav-link { display: inline-block; margin-bottom: 15px; color: #28a745; text-decoration: none; font-weight: bold; }
+        .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; }
+        .brand-header h2 { color: #007bff; margin: 0; font-size: 20px; font-weight: bold; }
+        .user-info { font-size: 13px; color: #555; text-align: right; }
+        .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
+        .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
+   </style>
+</head>
+<body>
+   <div class="main-container">
+       <!-- PAINEL PIX REAL -->
+       <div id="painel-pix" class="pix-card">
+           <h3 style="color: #28a745; margin-top: 0;">Pagamento via Pix</h3>
+           <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Escaneie o QR Code abaixo:</p>
+           
+           <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=00020126400014br.gov.bcb.pix0118py9dm.mt@gmail.com5204000053039865802BR5915BERSEJULIOCESAR6009Sao Paulo610901227-20062230519daqr2112582259416686304F335" alt="QR Code Pix" style="width: 200px; height: 200px; border-radius: 8px; border: 1px solid #ddd; padding: 5px; background: #fff;">
+           
+           <p style="font-size: 12px; color: #666; margin-top: 10px;">Ou copie o código Copia e Cola:</p>
+           <textarea readonly style="width: 100%; height: 50px; font-size: 10px; border: 1px solid #ccc; padding: 5px; resize: none; background: #f9f9f9;">00020126400014br.gov.bcb.pix0118py9dm.mt@gmail.com5204000053039865802BR5915BERSEJULIOCESAR6009Sao Paulo610901227-20062230519daqr2112582259416686304F335</textarea>
+       </div>
+
+       <!-- CARD PRINCIPAL DE VENDAS -->
+       <div class="card">
+           <div style="text-align: center; margin-bottom: 15px;">
+               <div style="display: inline-block; width: 40px; height: 40px; background-color: #bc002d; border-radius: 50%; line-height: 40px; color: white; font-weight: bold; font-size: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 4px;">山</div>
+               <h2 style="color: #1a1a1a; font-size: 18px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
+               <span style="color: #666; font-size: 10px; letter-spacing: 3px; text-transform: uppercase;">山崎グループ</span>
+           </div>
+           <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 15px;">
+
+           <div class="brand-header">
+               <h2>🏪 Frente de Caixa</h2>
+               <div class="user-info">
+                   Operador: <strong>{{ usuario }}</strong> <a href="/logout">[Sair]</a>
+               </div>
+           </div>
+           <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
+
+           <form id="formVenda" method="POST" action="/">
+               <label for="identificador">ID ou Código de Barras do Produto:</label>
+               <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
+               
+               <label for="forma_pagamento">Forma de Pagamento:</label>
+               <select name="forma_pagamento" id="forma_pagamento" onchange="verificarPix()">
+                   <option value="Dinheiro">Dinheiro</option>
+                   <option value="Cartao">Cartão</option>
+                   <option value="Pix">Pix</option>
+               </select>
+
+               <div class="info-box">
+                   <div class="info-row">
+                       <span>Produto:</span>
+                       <strong id="nome_produto">Aguardando busca...</strong>
+                   </div>
+                   <div class="info-row">
+                       <span>Valor Unitário:</span>
+                       <strong id="valor_unitario">R$ 0,00</strong>
+                   </div>
+               </div>
+
+               <label for="quantidade">Quantidade:</label>
+               <input type="number" id="quantidade" name="quantidade" value="1" min="1" required oninput="calcularTotal()" onkeydown="tratarTeclaQuantidade(event)">
+
+               <div class="info-box total-box">
+                   <div class="info-row">
+                       <span>VALOR TOTAL:</span>
+                       <strong id="valor_total">R$ 0,00</strong>
+                   </div>
+               </div>
+
+               <button type="submit" id="btnFinalizar">Registrar Venda (ENTER)</button>
+           </form>
+
+           {% if msg %}
+               <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
+           {% endif %}
+
+           <div class="footer-system">
+               Powered by <strong>Yamasaki Technology Solution</strong> 🚀
+           </div>
+       </div>
+   </div>
+
+   <script>
+       let precoUnitarioAtual = 0;
+
+       function verificarPix() {
+           const formaPagto = document.getElementById('forma_pagamento').value;
+           const painelPix = document.getElementById('painel-pix');
+           if (formaPagto === 'Pix') {
+               painelPix.style.display = 'block';
+           } else {
+               painelPix.style.display = 'none';
+           }
+       }
+
+       async function buscarProduto() {
+           const identificador = document.getElementById('identificador').value.trim();
+           if (!identificador) { resetarCampos(); return false; }
+           try {
+               const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
+               const data = await response.json();
+               if (data.sucesso) {
+                   document.getElementById('nome_produto').innerText = data.nome;
+                   precoUnitarioAtual = parseFloat(data.preco);
+                   document.getElementById('valor_unitario').innerText = 'R$ ' + precoUnitarioAtual.toFixed(2).replace('.', ',');
+                   calcularTotal();
+                   return true;
+               } else {
+                   document.getElementById('nome_produto').innerText = 'Produto não encontrado';
+                   resetarCampos();
+                   return false;
+               }
+           } catch (e) { resetarCampos(); return false; }
+       }
+
+       async function tratarTeclaIdentificador(e) {
+           if (e.key === 'Enter' || e.key === 'Tab') {
+               e.preventDefault();
+               const achou = await buscarProduto();
+               if (achou) {
+                   const campoQtd = document.getElementById('quantidade');
+                   campoQtd.focus();
+                   campoQtd.select();
+               }
+           }
+       }
+       function tratarTeclaQuantidade(e) { if (e.key === 'Enter') { calcularTotal(); } }
+       function calcularTotal() {
+           const qtd = parseInt(document.getElementById('quantidade').value) || 0;
+           const total = precoUnitarioAtual * qtd;
+           document.getElementById('valor_total').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
+       }
+       function resetarCampos() {
+           document.getElementById('valor_unitario').innerText = 'R$ 0,00';
+           document.getElementById('valor_total').innerText = 'R$ 0,00';
+           precoUnitarioAtual = 0;
+       }
+   </script>
 </body>
 </html>
 """
@@ -82,20 +240,117 @@ def get_db_connection():
 HTML_ESTOQUE = """
 <!DOCTYPE html>
 <html lang="pt-br">
-@@ -235,7 +233,7 @@ def conectar_banco():
-        <form method="POST">
-            <div class="form-group">
-                <label>Código de Barras ou ID do Produto</label>
-                <input type="text" id="identificador_estoque" name="identificador" onkeyup="buscarEstoque()" required autofocus>
-                <input type="text" id="identificador_estoque" name="identificador" oninput="buscarEstoque()" onblur="buscarEstoque()" required autofocus>
-                <div id="info_produto"></div>
+<head>
+   <meta charset="UTF-8">
+   <title>Entrada de Estoque - Grupo Yamasaki</title>
+   <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; }
+        .card { background: #ffffff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
+        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
+        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
+        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #fff; }
+        input:focus { border-color: #28a745; outline: none; }
+        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #218838; }
+        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px; }
+        .info-row strong { color: #333; }
+        .msg { margin-top: 20px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; }
+        .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
+        .msg-erro { background: #ffebee; color: #c62828; }
+        .nav-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-weight: bold; }
+        .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; }
+        .brand-header h2 { color: #007bff; margin: 0; font-size: 20px; font-weight: bold; }
+        .user-info { font-size: 13px; color: #555; text-align: right; }
+        .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
+        .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
+   </style>
+</head>
+<body>
+ <div class="card">
+        <div style="text-align: center; margin-bottom: 15px;">
+            <div style="display: inline-block; width: 40px; height: 40px; background-color: #bc002d; border-radius: 50%; line-height: 40px; color: white; font-weight: bold; font-size: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 4px;">山</div>
+            <h2 style="color: #1a1a1a; font-size: 18px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
+            <span style="color: #666; font-size: 10px; letter-spacing: 3px; text-transform: uppercase;">山崎グループ</span>
+        </div>
+        <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 15px;">
+
+        <div class="brand-header">
+            <h2>📦 Gerenciamento de Estoque</h2>
+            <div class="user-info">
+                Operador: <strong>{{ usuario }}</strong> <a href="/logout">[Sair]</a>
             </div>
-            <div class="form-group">
-@@ -248,210 +246,211 @@ def conectar_banco():
+        </div>
+        <a class="nav-link" href="/">← Voltar para o Caixa</a>
+
+        <form method="POST">
+            <label for="identificador">Código de Barras ou ID:</label>
+            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProdutoEstoque()" onkeydown="tratarTeclaIdentificadorEstoque(event)">
+            
+            <div class="info-box">
+                <div class="info-row">
+                    <span>Produto:</span>
+                    <strong id="nome_produto">Aguardando busca...</strong>
+                </div>
+                <div class="info-row">
+                    <span>Estoque Atual:</span>
+                    <strong id="estoque_atual">-</strong>
+                </div>
+            </div>
+
+            <label for="quantidade">Quantidade a Adicionar / Retirar (ex: 10 ou -10):</label>
+            <input type="number" id="quantidade" name="quantidade" value="1" required>
+
+            <button type="submit">Atualizar Estoque</button>
+        </form>
+
+        {% if msg %}
+            <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
+        {% endif %}
+
+        <div class="footer-system">
+            Powered by <strong>Yamasaki Technology Solution</strong> 🚀
+        </div>
+   </div>
+
+   <script>
+       async function buscarProdutoEstoque() {
+           const identificador = document.getElementById('identificador').value.trim();
+           if (!identificador) { resetarCampos(); return false; }
+           try {
+               const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
+               const data = await response.json();
+               if (data.sucesso) {
+                   document.getElementById('nome_produto').innerText = data.nome;
+                   document.getElementById('estoque_atual').innerText = data.estoque;
+                   return true;
+               } else {
+                   document.getElementById('nome_produto').innerText = 'Produto não encontrado';
+                   document.getElementById('estoque_atual').innerText = '-';
+                   return false;
+               }
+           } catch (e) { resetarCampos(); return false; }
+       }
+
+       async function tratarTeclaIdentificadorEstoque(e) {
+           if (e.key === 'Enter' || e.key === 'Tab') {
+               e.preventDefault();
+               const achou = await buscarProdutoEstoque();
+               if (achou) {
+                   const campoQtd = document.getElementById('quantidade');
+                   campoQtd.focus();
+                   campoQtd.select();
+               }
+           }
+       }
+       function resetarCampos() {
+           document.getElementById('nome_produto').innerText = 'Aguardando busca...';
+           document.getElementById('estoque_atual').innerText = '-';
+       }
+   </script>
 </body>
 </html>
 """
-# --- ROTAS DO SISTEMA ---
 
 @app.route('/login', methods=['GET', 'POST'])
 def login():
@@ -103,66 +358,13 @@ def login():
     if request.method == 'POST':
         username = request.form.get('username', '').strip()
         password = request.form.get('password', '').strip()
-HTML_FECHAMENTO = """
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Grupo Yamasaki - Fechamento de Caixa</title>
-    <style>
-        body { background: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #3b82f6; }
-        .nav-links a { color: #60a5fa; text-decoration: none; margin-left: 15px; font-weight: 600; }
-        .container { max-width: 900px; margin: 0 auto; background: #1e293b; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.3); }
-        h1 { color: #60a5fa; margin-top: 0; }
-        table { width: 100%; border-collapse: collapse; margin-top: 20px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
-        th { background: #0f172a; color: #60a5fa; }
-        .total-geral { margin-top: 20px; font-size: 20px; font-weight: bold; color: #34d399; text-align: right; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div><strong>Operador:</strong> {{ usuario }}</div>
-        <div class="nav-links">
-            <a href="/">Caixa (Venda)</a>
-            <a href="/estoque/entrada">Entrada de Estoque</a>
-            <a href="/relatorio/fechamento">📊 Fechamento de Caixa</a>
-            <a href="/logout" style="color: #f87171;">Sair</a>
-        </div>
-    </div>
-    <div class="container">
-        <h1>Fechamento de Caixa do Dia</h1>
-        <table>
-            <thead>
-                <tr>
-                    <th>Forma de Pagamento</th>
-                    <th>Total Arrecadado</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for row in totais %}
-                <tr>
-                    <td>{{ row[0] }}</td>
-                    <td>R$ {{ "%.2f"|format(row[1]) }}</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
-        <div class="total-geral">
-            Total Geral: R$ {{ "%.2f"|format(total_geral) }}
-        </div>
-    </div>
-</body>
-</html>
-"""
 
         conn = conectar_banco()
         cur = conn.cursor()
         try:
             cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE login = %s AND senha = %s;", (username, password))
             usuario = cur.fetchone()
-            
+
             if usuario:
                 session['usuario'] = username
                 return redirect(url_for('index'))
@@ -173,21 +375,8 @@ HTML_FECHAMENTO = """
         finally:
             cur.close()
             conn.close()
-# --- ROTAS DO FLASK ---
 
     return render_template_string(HTML_LOGIN, msg=mensagem)
-@app.route('/login', methods=['GET', 'POST5' if False else 'POST'])
-def login():
-    error = None
-    if request.method == 'POST':
-        usuario = request.form.get('usuario')
-        senha = request.form.get('senha')
-        if usuario and senha:
-            session['usuario'] = usuario
-            return redirect(url_for('caixa'))
-        else:
-            error = "Preencha todos os campos."
-    return render_template_string(HTML_LOGIN, error=error)
 
 @app.route('/logout')
 def logout():
@@ -196,67 +385,60 @@ def logout():
 
 @app.route('/buscar_produto')
 def buscar_produto():
+    if 'usuario' not in session:
+        return jsonify({'sucesso': False})
+    
     q = request.args.get('q', '').strip()
     if not q:
-        return jsonify({"sucesso": False})
-    
-    conn = get_db_connection()
+        return jsonify({'sucesso': False})
+
+    conn = conectar_banco()
     cur = conn.cursor()
     try:
         if q.isdigit():
-            cur.execute("SELECT id, nome, preco, estoque FROM produtos WHERE id = %s OR codigo_barras = %s", (int(q), q))
+            cur.execute(f"SELECT id, codigo_barra, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s;", (int(q),))
         else:
-            cur.execute("SELECT id, nome, preco, estoque FROM produtos WHERE codigo_barras = %s", (q,))
+            cur.execute(f"SELECT id, codigo_barra, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (q,))
         
-        produto = cur.fetchone()
-        if produto:
+        prod = cur.fetchone()
+        if prod:
             return jsonify({
-                "sucesso": True,
-                "id": produto[0],
-                "nome": produto[1],
-                "preco": float(produto[2]),
-                "estoque": produto[3]
+                'sucesso': True,
+                'id': prod[0],
+                'codigo_barra': prod[1],
+                'nome': prod[2],
+                'preco': float(prod[3]),
+                'estoque': prod[4]
             })
-        else:
-            return jsonify({"sucesso": False})
+        return jsonify({'sucesso': False})
     except Exception as e:
-        return jsonify({"sucesso": False, "erro": str(e)})
+        return jsonify({'sucesso': False, 'erro': str(e)})
     finally:
         cur.close()
         conn.close()
 
 @app.route('/', methods=['GET', 'POST'])
 def index():
-def caixa():
     if 'usuario' not in session:
         return redirect(url_for('login'))
 
+    operador_atual = session['usuario']
     mensagem = None
-    
-    msg = None
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip()
-        identificador = request.form.get('identificador')
         quantidade = int(request.form.get('quantidade', 1))
-        forma_pagamento = request.form.get('forma_pagamento', 'Dinheiro')
-        operador_atual = session.get('usuario', 'Desconhecido')
-
-        conn = conectar_banco()
-        forma_pagamento = request.form.get('forma_pagamento')
         
-        conn = get_db_connection()
+        conn = conectar_banco()
         cur = conn.cursor()
         try:
             if identificador.isdigit():
                 cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
-                cur.execute("SELECT id, nome, preco, estoque FROM produtos WHERE id = %s OR codigo_barras = %s", (int(identificador), identificador))
             else:
                 cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
-            
+
             produto = cur.fetchone()
             if not produto:
                 raise Exception("Produto não encontrado no cadastro!")
-                cur.execute("SELECT id, nome, preco, estoque FROM produtos WHERE codigo_barras = %s", (identificador,))
 
             prod_id = produto[0]
             codigo_barra = produto[1]
@@ -266,30 +448,10 @@ def caixa():
 
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
-            prod = cur.fetchone()
-            if prod:
-                prod_id, nome, preco, estoque = prod
-                if estoque >= quantidade:
-                    novo_estoque = estoque - quantidade
-                    cur.execute("UPDATE produtos SET estoque = %s WHERE id = %s", (novo_estoque, prod_id))
-                    
-                    total_venda = preco * quantidade
-                    cur.execute("INSERT INTO vendas (produto_id, quantidade, valor_total, forma_pagamento, operador, data_venda) VALUES (%s, %s, %s, %s, %s, %s)",
-                                (prod_id, quantidade, total_venda, forma_pagamento, session['usuario'], datetime.now()))
-                    conn.commit()
-                    msg = f"Venda realizada com sucesso! Total: R$ {total_venda:.2f}"
-                else:
-                    msg = "Estoque insuficiente para esta venda!"
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
-            
-            # Insere na tabela de vendas com operador
-            cur.execute(
-                "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade, operador) VALUES (NOW(), %s, %s, %s, %s, %s);",
-                (total_venda, forma_pagamento, nome_produto, quantidade, operador_atual)
-            )
-            
-            # Insere no log de auditoria (produtobkp) com operador
+
+            # Inserção no Backup/Histórico incluindo o Operador Logado
             cur.execute(
                 "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'VENDA', %s);",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
@@ -297,86 +459,38 @@ def caixa():
 
             conn.commit()
             mensagem = f"Venda realizada com sucesso! ({quantidade}x {nome_produto} - R$ {total_venda:.2f})"
-                msg = "Produto não encontrado!"
         except Exception as e:
             conn.rollback()
-            mensagem = f"Erro ao registrar venda: {e}"
-            msg = f"Erro ao realizar venda: {e}"
+            mensagem = f"Erro ao realizar venda: {e}"
         finally:
             cur.close()
             conn.close()
 
-    return render_template_string(HTML_CAIXA, msg=mensagem, usuario=session['usuario'])
-
-@app.route('/buscar_produto')
-def buscar_produto():
-    if 'usuario' not in session:
-        return jsonify({'sucesso': False})
-    q = request.args.get('q', '').strip()
-    conn = conectar_banco()
-    cur = conn.cursor()
-    try:
-        if q.isdigit():
-            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s;", (int(q),))
-        else:
-            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (q,))
-        produto = cur.fetchone()
-        if produto:
-            return jsonify({'sucesso': True, 'nome': produto[0], 'preco': float(produto[1]), 'estoque': produto[2]})
-        return jsonify({'sucesso': False})
-    finally:
-        cur.close()
-        conn.close()
-
-@app.route('/api/produto/<identificador>')
-def api_produto(identificador):
-    if 'usuario' not in session:
-        return jsonify({'encontrado': False})
-    conn = conectar_banco()
-    cur = conn.cursor()
-    try:
-        if identificador.isdigit():
-            cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
-        else:
-            cur.execute(f"SELECT nome FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
-        produto = cur.fetchone()
-        return jsonify({'encontrado': bool(produto), 'nome': produto[0] if produto else ""})
-    finally:
-        cur.close()
-        conn.close()
-    return render_template_string(HTML_CAIXA, usuario=session['usuario'], msg=msg)
+    return render_template_string(HTML_CAIXA, usuario=operador_atual, msg=mensagem)
 
 @app.route('/estoque/entrada', methods=['GET', 'POST'])
-def entrada_estoque():
+def estoque_entrada():
     if 'usuario' not in session:
         return redirect(url_for('login'))
 
+    operador_atual = session['usuario']
     mensagem = None
-    
-    msg = None
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip()
-        quantidade = int(request.form.get('quantidade', 0))
-        operador_atual = session.get('usuario', 'Desconhecido')
+        quantidade = int(request.form.get('quantidade', 1))
 
         conn = conectar_banco()
-        identificador = request.form.get('identificador')
-        quantidade = int(request.form.get('quantidade', 1))
-        
-        conn = get_db_connection()
         cur = conn.cursor()
         try:
             if identificador.isdigit():
                 cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
-                cur.execute("SELECT id, estoque FROM produtos WHERE id = %s OR codigo_barras = %s", (int(identificador), identificador))
             else:
                 cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
-                cur.execute("SELECT id, estoque FROM produtos WHERE codigo_barras = %s", (identificador,))
 
             produto = cur.fetchone()
             if not produto:
                 raise Exception("Produto não encontrado no cadastro!")
-            
+
             prod_id = produto[0]
             codigo_barra = produto[1]
             nome_produto = produto[2]
@@ -384,16 +498,10 @@ def entrada_estoque():
 
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s;", (quantidade, int(identificador)))
-            prod = cur.fetchone()
-            if prod:
-                prod_id, estoque_atual = prod
-                novo_estoque = estoque_atual + quantidade
-                cur.execute("UPDATE produtos SET estoque = %s WHERE id = %s", (novo_estoque, prod_id))
-                conn.commit()
-                msg = f"Estoque atualizado com sucesso! Novo estoque: {novo_estoque}"
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s;", (quantidade, identificador))
-            
+
+            # Inserção no Backup/Histórico de Entrada de Estoque incluindo o Operador Logado
             cur.execute(
                 "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'ENTRADA', %s);",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
@@ -401,56 +509,15 @@ def entrada_estoque():
 
             conn.commit()
             mensagem = f"Estoque atualizado com sucesso! ({quantidade:+d} unidades de {nome_produto})"
-                msg = "Produto não encontrado!"
         except Exception as e:
             conn.rollback()
             mensagem = f"Erro ao atualizar estoque: {e}"
-            msg = f"Erro ao atualizar estoque: {e}"
         finally:
             cur.close()
             conn.close()
-    return render_template_string(HTML_ESTOQUE, msg=mensagem, usuario=session['usuario'])
 
-    return render_template_string(HTML_ESTOQUE, usuario=session['usuario'], msg=msg)
-
-@app.route('/relatorio/fechamento')
-def fechamento_caixa():
-def fechamento():
-    if 'usuario' not in session:
-        return redirect(url_for('login'))
-
-    conn = conectar_banco()
-    
-    conn = get_db_connection()
-    cur = conn.cursor()
-    try:
-        cur.execute("SELECT COALESCE(SUM(total), 0), COUNT(*) FROM vendas WHERE DATE(data_venda) = CURRENT_DATE;")
-        cur.execute("SELECT forma_pagamento, SUM(valor_total) FROM vendas GROUP BY forma_pagamento")
-        totais = cur.fetchall()
-        
-        cur.execute("SELECT SUM(valor_total) FROM vendas")
-        res_geral = cur.fetchone()
-        total_faturado = res_geral[0]
-        total_vendas = res_geral[1]
-
-        cur.execute("SELECT forma_pagamento, COALESCE(SUM(total), 0) FROM vendas WHERE DATE(data_venda) = CURRENT_DATE GROUP BY forma_pagamento;")
-        por_pagamento = cur.fetchall()
-
-        cur.execute("SELECT operador, COALESCE(SUM(total), 0), COUNT(*) FROM vendas WHERE DATE(data_venda) = CURRENT_DATE GROUP BY operador;")
-        por_operador = cur.fetchall()
-        total_geral = res_geral[0] if res_geral and res_geral[0] else 0.0
-    finally:
-        cur.close()
-        conn.close()
-
-    return render_template_string(HTML_FECHAMENTO, 
-                                 faturado=total_faturado, 
-                                 vendas=total_vendas, 
-                                 pagamentos=por_pagamento, 
-                                 operadores=por_operador,
-                                 usuario=session['usuario'])
-    return render_template_string(HTML_FECHAMENTO, usuario=session['usuario'], totais=totais, total_geral=total_geral)
+    return render_template_string(HTML_ESTOQUE, usuario=operador_atual, msg=mensagem)
 
 if __name__ == '__main__':
-    app.run(debug=True)
-    app.run(host='0.0.0.0', port=5000, debug=True)
+    port = int(os.environ.get('PORT', 5000))
+    app.run(host='0.0.0.0', port=port)
