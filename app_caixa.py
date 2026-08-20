@@ -340,8 +340,7 @@ def index():
 
         conn = conectar_banco()
         cur = conn.cursor()
-      try:
-            # 1. Busca os dados completos do produto
+        try:
             if identificador.isdigit():
                 cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
             else:
@@ -357,22 +356,18 @@ def index():
             preco_unitario = float(produto[3])
             total_venda = preco_unitario * quantidade
 
-            # 2. Dá baixa no estoque
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
-            # 3. Registra na tabela de vendas
             cur.execute(
                 "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade) VALUES (NOW(), %s, %s, %s, %s);",
                 (total_venda, forma_pagamento, nome_produto, quantidade)
             )
             
-            # 4. Popula a tabela produtobkp
             cur.execute(
-                """INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) 
-                   VALUES (%s, %s, %s, %s, %s, NOW());""",
+                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) VALUES (%s, %s, %s, %s, %s, NOW());",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade)
             )
 
@@ -386,7 +381,6 @@ def index():
             conn.close()
 
     return render_template_string(HTML_CAIXA, msg=mensagem, usuario=session['usuario'])
-
 @app.route('/buscar_produto')
 def buscar_produto():
     if 'usuario' not in session:
