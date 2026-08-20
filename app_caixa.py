@@ -372,7 +372,7 @@ def index():
             # 4. Popula a tabela produtobkp com os dados exatos do seu banco
             cur.execute(
                 "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) VALUES (%s, %s, %s, %s, %s, NOW());",
-                (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade)
+                (id, produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento)
             )
 
             conn.commit()
