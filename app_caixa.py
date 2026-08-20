@@ -75,16 +75,16 @@ HTML_CAIXA = """
         .msg { padding: 12px; background: #065f46; color: #d1fae5; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold; }
         #info_produto { color: #fbbf24; font-size: 14px; margin-top: 5px; }
     </style>
-    <script>
+  <script>
         function buscarProduto() {
             let id = document.getElementById('identificador').value.trim();
             let infoDiv = document.getElementById('info_produto');
             if (id.length > 0) {
-                fetch('/api/produto/' + id)
+                fetch('/buscar_produto?q=' + encodeURIComponent(id))
                     .then(response => response.json())
                     .then(data => {
-                        if (data.encontrado) {
-                            infoDiv.innerText = "Produto: " + data.nome;
+                        if (data.sucesso) {
+                            infoDiv.innerHTML = "<strong>Produto:</strong> " + data.nome + " | <strong>Preço:</strong> R$ " + data.preco.toFixed(2) + " | <strong>Estoque:</strong> " + data.estoque;
                         } else {
                             infoDiv.innerText = "Aguardando busca / Produto não encontrado";
                         }
@@ -156,6 +156,25 @@ HTML_ESTOQUE = """
         .msg { padding: 12px; background: #1e3a8a; color: #bfdbfe; border-radius: 6px; margin-bottom: 20px; text-align: center; font-weight: bold; }
         #info_produto { color: #fbbf24; font-size: 14px; margin-top: 5px; }
     </style>
+    <script>
+        function buscarEstoque() {
+            let id = document.getElementById('identificador_estoque').value.trim();
+            let infoDiv = document.getElementById('info_produto');
+            if (id.length > 0) {
+                fetch('/buscar_produto?q=' + encodeURIComponent(id))
+                    .then(response => response.json())
+                    .then(data => {
+                        if (data.sucesso) {
+                            infoDiv.innerHTML = "<strong>Produto:</strong> " + data.nome + " | <strong>Estoque Atual:</strong> " + data.estoque;
+                        } else {
+                            infoDiv.innerText = "Aguardando busca / Produto não encontrado";
+                        }
+                    });
+            } else {
+                infoDiv.innerText = "";
+            }
+        }
+    </script>
 </head>
 <body>
     <div class="header">
@@ -175,7 +194,8 @@ HTML_ESTOQUE = """
         <form method="POST">
             <div class="form-group">
                 <label>Código de Barras ou ID do Produto</label>
-                <input type="text" name="identificador" required autofocus>
+                <input type="text" id="identificador_estoque" name="identificador" onkeyup="buscarEstoque()" required autofocus>
+                <div id="info_produto"></div>
             </div>
             <div class="form-group">
                 <label>Quantidade a Adicionar</label>
@@ -187,80 +207,6 @@ HTML_ESTOQUE = """
 </body>
 </html>
 """
-
-HTML_FECHAMENTO = """
-<!DOCTYPE html>
-<html lang="pt-br">
-<head>
-    <meta charset="UTF-8">
-    <title>Grupo Yamasaki - Fechamento de Caixa</title>
-    <style>
-        body { background: #0f172a; color: #f8fafc; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; }
-        .header { display: flex; justify-content: space-between; align-items: center; background: #1e293b; padding: 15px 25px; border-radius: 8px; margin-bottom: 20px; border-bottom: 3px solid #3b82f6; }
-        .nav-links a { color: #60a5fa; text-decoration: none; margin-left: 15px; font-weight: 600; }
-        .container { max-width: 900px; margin: 0 auto; }
-        h1 { color: #60a5fa; }
-        .cards { display: flex; gap: 20px; margin-bottom: 30px; }
-        .card { background: #1e293b; flex: 1; padding: 20px; border-radius: 10px; box-shadow: 0 4px 10px rgba(0,0,0,0.2); border-left: 4px solid #10b981; }
-        .card h3 { margin: 0 0 10px 0; color: #94a3b8; font-size: 14px; }
-        .card .value { font-size: 24px; font-weight: bold; color: #fff; }
-        .section { background: #1e293b; padding: 20px; border-radius: 10px; margin-bottom: 20px; }
-        table { width: 100%; border-collapse: collapse; margin-top: 10px; }
-        th, td { padding: 12px; text-align: left; border-bottom: 1px solid #334155; }
-        th { color: #60a5fa; }
-    </style>
-</head>
-<body>
-    <div class="header">
-        <div><strong>Operador:</strong> {{ usuario }}</div>
-        <div class="nav-links">
-            <a href="/">Caixa (Venda)</a>
-            <a href="/estoque/entrada">Entrada de Estoque</a>
-            <a href="/relatorio/fechamento">📊 Fechamento de Caixa</a>
-            <a href="/logout" style="color: #f87171;">Sair</a>
-        </div>
-    </div>
-    <div class="container">
-        <h1>Fechamento de Caixa Diário</h1>
-        <div class="cards">
-            <div class="card">
-                <h3>Faturamento Total Hoje</h3>
-                <div class="value">R$ {{ "%.2f"|format(faturado) }}</div>
-            </div>
-            <div class="card" style="border-left-color: #3b82f6;">
-                <h3>Total de Vendas Realizadas</h3>
-                <div class="value">{{ vendas }}</div>
-            </div>
-        </div>
-
-        <div class="section">
-            <h3 style="color: #60a5fa; margin-top: 0;">Vendas por Forma de Pagamento</h3>
-            <table>
-                <tr><th>Forma de Pagamento</th><th>Total Arrecadado</th></tr>
-                {% for pag in pagamentos %}
-                <tr><td>{{ pag[0] }}</td><td>R$ {{ "%.2f"|format(pag[1]) }}</td></tr>
-                {% else %}
-                <tr><td colspan="2" style="color: #64748b;">Nenhuma venda registrada hoje.</td></tr>
-                {% endfor %}
-            </table>
-        </div>
-
-        <div class="section">
-            <h3 style="color: #60a5fa; margin-top: 0;">Vendas por Operador</h3>
-            <table>
-                <tr><th>Operador</th><th>Qtd. Vendas</th><th>Total Faturado</th></tr>
-                {% for op in operadores %}
-                <tr><td>{{ op[0] }}</td><td>{{ op[2] }}</td><td>R$ {{ "%.2f"|format(op[1]) }}</td></tr>
-                {% else %}
-                <tr><td colspan="3" style="color: #64748b;">Nenhum registro de operador hoje.</td></tr>
-                {% endfor %}
-            </table>
-        </div>
-    </div>
-</body>
-</html>
-"""
-
 # --- ROTAS DO SISTEMA ---
 
 @app.route('/login', methods=['GET', 'POST'])
