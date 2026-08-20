@@ -59,7 +59,25 @@ HTML_CAIXA = """
     <meta charset="UTF-8">
     <title>Berse Supermercados - PDV</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; padding: 20px; box-sizing: border-box; }
+
+        body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    margin: 0;
+    min-height: 100vh;
+    background-color: #f0f2f5;
+    
+    /* Textura de fundo moderna (padrão sutil em grid) */
+    background-image: 
+        linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
+        linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
+    background-size: 20px 20px;
+    
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    padding: 20px;
+    box-sizing: border-box;
+}
         
         /* Container principal que segura o Pix e o Card lado a lado */
         .main-container { display: flex; gap: 20px; align-items: flex-start; max-width: 1000px; width: 100%; justify-content: center; }
