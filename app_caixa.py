@@ -95,19 +95,17 @@ HTML_CAIXA = """
 </head>
 <body>
 
-    <div class="main-container">
-        <!-- PAINEL PIX (Fica oculto até selecionar Pix) -->
-        <div id="painel-pix" class="pix-card">
-            <h3>📱 Pagamento via Pix</h3>
-            <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Escaneie o QR Code ou abra o link de pagamento:</p>
-            
-            <div class="qr-placeholder">
-                [ QR Code / Simulado ]
-            </div>
-
-            <!-- Link externo via a href conforme conversamos -->
-            <a href="https://link.mercadopago.com.br/grupoyamasaki" target="_blank" class="btn-pix-link">🔗 Abrir Link de Pagamento</a>
-        </div>
+   <!-- PAINEL PIX REAL -->
+    <div id="painel-pix" class="pix-card">
+        <h3 style="color: #28a745; margin-top: 0;">Pagamento via Pix</h3>
+        <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Escaneie o QR Code abaixo:</p>
+        
+        <!-- Imagem gerada dinamicamente com o seu Payload do Pix -->
+        <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=00020126400014br.gov.bcb.pix0118py9dm.mt@gmail.com5204000053039865802BR5915BERSEJULIOCESAR6009Sao Paulo610901227-20062230519daqr2112582259416686304F335" alt="QR Code Pix" style="width: 200px; height: 200px; border-radius: 8px; border: 1px solid #ddd; padding: 5px; background: #fff;">
+        
+        <p style="font-size: 12px; color: #666; margin-top: 10px;">Ou copie o código Copia e Cola:</p>
+        <textarea readonly style="width: 100%; height: 50px; font-size: 10px; border: 1px solid #ccc; padding: 5px; resize: none; background: #f9f9f9;">00020126400014br.gov.bcb.pix0118py9dm.mt@gmail.com5204000053039865802BR5915BERSEJULIOCESAR6009Sao Paulo610901227-20062230519daqr2112582259416686304F335</textarea>
+    </div>
 
         <!-- CARD PRINCIPAL DE VENDAS -->
         <div class="card">
