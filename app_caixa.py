@@ -3,17 +3,15 @@ import psycopg2
 from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
 
 app = Flask(__name__)
-app.secret_key = "chave_secreta_super_segura_berse" # Necessário para usar sessões no Flask
+app.secret_key = "chave_secreta_super_segura_berse"
 
-# CONFIGURAÇÃO: Tabela de produtos e usuários
 TABELA_PRODUTO = "produto"
-TABELA_USUARIO = "usuario" # Conforme visto no seu banco
+TABELA_USUARIO = "usuario"
 
 def conectar_banco():
     db_url = os.environ.get('DATABASE_URL')
     return psycopg2.connect(db_url)
 
-# --- TEMPLATE DA TELA DE LOGIN ---
 HTML_LOGIN = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -54,7 +52,6 @@ HTML_LOGIN = """
 </html>
 """
 
-# --- TEMPLATE DA TELA DE CAIXA (Com Operador Logado) ---
 HTML_CAIXA = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -189,46 +186,117 @@ HTML_CAIXA = """
 </html>
 """
 
+# --- TELA DE ESTOQUE ATUALIZADA (Com mesmo padrão do caixa) ---
 HTML_ESTOQUE = """
 <!DOCTYPE html>
-<html lang="pt-BR">
+<html lang="pt-br">
 <head>
     <meta charset="UTF-8">
-    <title>Entrada de Estoque</title>
+    <title>Entrada de Estoque - Grupo Yamasaki</title>
     <style>
-        body { font-family: Arial, sans-serif; background: #f4f4f9; padding: 20px; }
-        .container { max-width: 500px; background: white; padding: 20px; border-radius: 8px; box-shadow: 0 0 10px rgba(0,0,0,0.1); margin: auto; }
-        h2 { color: #333; }
-        label { display: block; margin-top: 10px; font-weight: bold; }
-        input, button { width: 100%; padding: 10px; margin-top: 5px; box-sizing: border-box; }
-        button { background: #28a745; color: white; border: none; border-radius: 4px; font-size: 16px; cursor: pointer; margin-top: 15px; }
-        button:hover { background: #218838; }
-        .msg { margin-top: 15px; padding: 10px; background: #e2f0d9; color: #385723; border-radius: 4px; text-align: center; }
-        a { display: block; text-align: center; margin-top: 15px; text-decoration: none; color: #007bff; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 30px; background-color: #f0f2f5; display: flex; justify-content: center; }
+        .card { background: #ffffff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
+        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
+        input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #fff; }
+        input:focus { border-color: #28a745; outline: none; }
+        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #28a745; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button:hover { background-color: #218838; }
+        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px; }
+        .info-row strong { color: #333; }
+        .msg { margin-top: 20px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; }
+        .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
+        .msg-erro { background: #ffebee; color: #c62828; }
+        .nav-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-weight: bold; }
+        .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; }
+        .brand-header h2 { color: #007bff; margin: 0; font-size: 20px; font-weight: bold; }
+        .user-info { font-size: 13px; color: #555; text-align: right; }
+        .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
+        .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
     </style>
 </head>
 <body>
-    <div class="container">
-        <h2>Entrada de Estoque</h2>
-        {% if msg %}
-            <div class="msg">{{ msg }}</div>
-        {% endif %}
+    <div class="card">
+        <div class="brand-header">
+            <h2>🏪 GRUPO YAMASAKI</h2>
+            <div class="user-info">
+                Operador: <strong>{{ usuario }}</strong> <a href="/logout">[Sair]</a>
+            </div>
+        </div>
+        <a class="nav-link" href="/">← Voltar para o Caixa</a>
+        <h1>📦 Gerenciamento de Estoque</h1>
+
         <form method="POST">
             <label for="identificador">Código de Barras ou ID:</label>
-            <input type="text" id="identificador" name="identificador" required autofocus>
+            <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProdutoEstoque()" onkeydown="tratarTeclaIdentificadorEstoque(event)">
             
-            <label for="quantidade">Quantidade a Adicionar:</label>
-            <input type="number" id="quantidade" name="quantidade" value="1" min="1" required>
-            
-            <button type="submit">Adicionar ao Estoque</button>
+            <div class="info-box">
+                <div class="info-row">
+                    <span>Produto:</span>
+                    <strong id="nome_produto">Aguardando busca...</strong>
+                </div>
+                <div class="info-row">
+                    <span>Estoque Atual:</span>
+                    <strong id="estoque_atual">-</strong>
+                </div>
+            </div>
+
+            <label for="quantidade">Quantidade a Adicionar / Retirar (ex: 10 ou -10):</label>
+            <input type="number" id="quantidade" name="quantidade" value="1" required>
+
+            <button type="submit">Atualizar Estoque</button>
         </form>
-        <a href="/">Voltar para o Caixa</a>
+
+        {% if msg %}
+            <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
+        {% endif %}
+
+        <div class="footer-system">
+            Powered by <strong>Yamasaki Technology Solution</strong> 🚀
+        </div>
     </div>
+
+    <script>
+        async function buscarProdutoEstoque() {
+            const identificador = document.getElementById('identificador').value.trim();
+            if (!identificador) { resetarCampos(); return false; }
+            try {
+                const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
+                const data = await response.json();
+                if (data.sucesso) {
+                    document.getElementById('nome_produto').innerText = data.nome;
+                    document.getElementById('estoque_atual').innerText = data.estoque;
+                    return true;
+                } else {
+                    document.getElementById('nome_produto').innerText = 'Produto não encontrado';
+                    document.getElementById('estoque_atual').innerText = '-';
+                    return false;
+                }
+            } catch (e) { resetarCampos(); return false; }
+        }
+
+        async function tratarTeclaIdentificadorEstoque(e) {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                const achou = await buscarProdutoEstoque();
+                if (achou) {
+                    const campoQtd = document.getElementById('quantidade');
+                    campoQtd.focus();
+                    campoQtd.select();
+                }
+            }
+        }
+
+        function resetarCampos() {
+            document.getElementById('nome_produto').innerText = 'Aguardando busca...';
+            document.getElementById('estoque_atual').innerText = '-';
+        }
+    </script>
 </body>
 </html>
 """
 
-# --- ROTA DE LOGIN ---
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     mensagem = None
@@ -239,7 +307,6 @@ def login():
         conn = conectar_banco()
         cur = conn.cursor()
         try:
-            # Nota: Ajuste os nomes das colunas (ex: username, senha) se forem diferentes no seu banco
             cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE login = %s AND senha = %s;", (username, password))
             usuario = cur.fetchone()
             
@@ -256,13 +323,11 @@ def login():
 
     return render_template_string(HTML_LOGIN, msg=mensagem)
 
-# --- ROTA DE LOGOUT ---
 @app.route('/logout')
 def logout():
     session.pop('usuario', None)
     return redirect(url_for('login'))
 
-# --- ROTA DO CAIXA ---
 @app.route('/', methods=['GET', 'POST'])
 def index():
     if 'usuario' not in session:
@@ -356,7 +421,7 @@ def entrada_estoque():
     mensagem = None
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip()
-        quantidade = int(request.form.get('quantidade', 1))
+        quantidade = int(request.form.get('quantidade', 0))
         conn = conectar_banco()
         cur = conn.cursor()
         try:
@@ -365,14 +430,14 @@ def entrada_estoque():
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s;", (quantidade, identificador))
             conn.commit()
-            mensagem = "Estoque atualizado com sucesso!"
+            mensagem = f"Estoque atualizado com sucesso! ({quantidade:+d} unidades)"
         except Exception as e:
             conn.rollback()
             mensagem = f"Erro ao atualizar estoque: {e}"
         finally:
             cur.close()
             conn.close()
-    return render_template_string(HTML_ESTOQUE, msg=mensagem)
+    return render_template_string(HTML_ESTOQUE, msg=mensagem, usuario=session['usuario'])
 
 if __name__ == '__main__':
     app.run(debug=True)
