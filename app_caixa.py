@@ -423,7 +423,7 @@ def index():
             preco_unitario = float(produto[3])
             total_venda = preco_unitario * quantidade
 
-            if identificador.isdigit():
+           if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
@@ -439,6 +439,8 @@ def index():
                 "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'VENDA', %s);",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
             )
+
+            conn.commit()
             
             
             
@@ -524,17 +526,19 @@ def entrada_estoque():
             nome_produto = produto[2]
             preco_unitario = float(produto[3])
 
-            if identificador.isdigit():
+          if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
-               operador_atual = session.get('usuario', 'Desconhecido')
-
+            operador_atual = session.get('usuario', 'Desconhecido')
+            
             cur.execute(
                 "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'ENTRADA', %s);",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
             )
+
+            conn.commit()
             
             
             
