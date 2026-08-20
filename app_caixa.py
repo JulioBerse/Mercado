@@ -457,11 +457,11 @@ def index():
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
             )
 
-            # 2. INSERÇÃO NA TABELA VENDAS (COLE AQUI) 👇
+          # 2. INSERÇÃO NA TABELA VENDAS COM OS NOME CORRETOS DAS COLUNAS
             forma_pagto = request.form.get('forma_pagamento', 'Dinheiro')
             cur.execute(
-                "INSERT INTO vendas (produto_id, quantidade, valor_total, forma_pagamento, data_venda, operador) VALUES (%s, %s, %s, %s, NOW(), %s);",
-                (prod_id, quantidade, total_venda, forma_pagto, operador_atual)
+                "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade, operador) VALUES (NOW(), %s, %s, %s, %s, %s);",
+                (total_venda, forma_pagto, nome_produto, quantidade, operador_atual)
             )
             # 👆 FIM DO CÓDIGO NOVO
 
