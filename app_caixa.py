@@ -131,6 +131,7 @@ HTML_CAIXA = """
                </div>
            </div>
            <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
+           <a class="nav-link" href="/fechamento" style="color: #bc002d;">📊 Fechamento de Caixa</a>
 
            <form id="formVenda" method="POST" action="/">
                <label for="identificador">ID ou Código de Barras do Produto:</label>
@@ -352,6 +353,41 @@ HTML_ESTOQUE = """
 </html>
 """
 
+HTML_FECHAMENTO = """
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Fechamento de Caixa</title>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <style>
+        body { font-family: sans-serif; background: #f0f2f5; padding: 20px; }
+        .card { background: white; padding: 20px; border-radius: 12px; max-width: 600px; margin: auto; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h2>📊 Fechamento de Caixa - Hoje</h2>
+        <canvas id="meuGrafico"></canvas>
+        <a href="/">← Voltar ao Caixa</a>
+    </div>
+
+    <script>
+        const ctx = document.getElementById('meuGrafico').getContext('2d');
+        new Chart(ctx, {
+            type: 'pie',
+            data: {
+                labels: {{ labels | tojson }},
+                datasets: [{
+                    data: {{ valores | tojson }},
+                    backgroundColor: ['#007bff', '#28a745', '#ffc107']
+                }]
+            }
+        });
+    </script>
+</body>
+</html>
+"""
+
 @app.route('/login', methods=['GET', 'POST'])
 def login():
     mensagem = None
@@ -524,6 +560,33 @@ def estoque_entrada():
             conn.close()
 
     return render_template_string(HTML_ESTOQUE, usuario=operador_atual, msg=mensagem)
+    # ... (suas outras rotas como @app.route('/login') e @app.route('/'))
+
+# 1. COLE AQUI A NOVA ROTA
+@app.route('/fechamento')
+def fechamento():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+    
+    conn = conectar_banco()
+    cur = conn.cursor()
+    # Busca vendas do dia atual
+    cur.execute("""
+        SELECT forma_pagamento, SUM(total) as soma 
+        FROM vendas 
+        WHERE data_venda::date = CURRENT_DATE 
+        GROUP BY forma_pagamento
+    """)
+    dados = cur.fetchall()
+    cur.close()
+    conn.close()
+    
+    # Formata para o Chart.js
+    labels = [d[0] for d in dados]
+    valores = [float(d[1]) for d in dados]
+    
+    return render_template_string(HTML_FECHAMENTO, labels=labels, valores=valores)
+
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
