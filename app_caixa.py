@@ -186,7 +186,6 @@ HTML_CAIXA = """
 </html>
 """
 
-# --- TELA DE ESTOQUE ATUALIZADA (Com mesmo padrão do caixa) ---
 HTML_ESTOQUE = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -342,29 +341,40 @@ def index():
         conn = conectar_banco()
         cur = conn.cursor()
         try:
+            # 1. Busca os dados completos do produto (incluindo id, codigo_barra, nome, preco)
             if identificador.isdigit():
-                cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
+                cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
             else:
-                cur.execute(f"SELECT nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
+                cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
             
             produto = cur.fetchone()
             if not produto:
                 raise Exception("Produto não encontrado no cadastro!")
             
-            nome_produto = produto[0]
-            preco_unitario = float(produto[1])
+            prod_id = produto[0]
+            codigo_barra = produto[1]
+            nome_produto = produto[2]
+            preco_unitario = float(produto[3])
             total_venda = preco_unitario * quantidade
 
+            # 2. Dá baixa no estoque
             if identificador.isdigit():
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
             
+            # 3. Registra na tabela de vendas
             cur.execute(
                 "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade) VALUES (NOW(), %s, %s, %s, %s);",
                 (total_venda, forma_pagamento, nome_produto, quantidade)
             )
             
+            # 4. Popula a tabela produtobkp com os dados exatos do seu banco
+            cur.execute(
+                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento) VALUES (%s, %s, %s, %s, %s, NOW());",
+                (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade)
+            )
+
             conn.commit()
             mensagem = f"Venda realizada com sucesso! ({quantidade}x {nome_produto} - R$ {total_venda:.2f})"
         except Exception as e:
