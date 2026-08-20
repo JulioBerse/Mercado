@@ -451,11 +451,19 @@ def index():
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
 
-            # Inserção no Backup/Histórico incluindo o Operador Logado
+            # 1. Inserção no Backup/Histórico
             cur.execute(
                 "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'VENDA', %s);",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
             )
+
+            # 2. INSERÇÃO NA TABELA VENDAS (COLE AQUI) 👇
+            forma_pagto = request.form.get('forma_pagamento', 'Dinheiro')
+            cur.execute(
+                "INSERT INTO vendas (produto_id, quantidade, valor_total, forma_pagamento, data_venda, operador) VALUES (%s, %s, %s, %s, NOW(), %s);",
+                (prod_id, quantidade, total_venda, forma_pagto, operador_atual)
+            )
+            # 👆 FIM DO CÓDIGO NOVO
 
             conn.commit()
             mensagem = f"Venda realizada com sucesso! ({quantidade}x {nome_produto} - R$ {total_venda:.2f})"
@@ -467,7 +475,6 @@ def index():
             conn.close()
 
     return render_template_string(HTML_CAIXA, usuario=operador_atual, msg=mensagem)
-
 @app.route('/estoque/entrada', methods=['GET', 'POST'])
 def estoque_entrada():
     if 'usuario' not in session:
