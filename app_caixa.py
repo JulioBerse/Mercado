@@ -15,6 +15,7 @@ def conectar_banco():
     return psycopg2.connect(db_url)
     
 <!--HTML da tela de login-->
+
 HTML_LOGIN = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -54,7 +55,9 @@ HTML_LOGIN = """
 </body>
 </html>
 """
+
 <!--HTML para a tela Frente de Caixa (PDV)-->
+
 HTML_CAIXA = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -240,7 +243,9 @@ HTML_CAIXA = """
 </body>
 </html>
 """
+
 <!--HTML da tela Entrada de Estoque-->
+
 HTML_ESTOQUE = """
 <!DOCTYPE html>
 <html lang="pt-br">
@@ -355,7 +360,9 @@ HTML_ESTOQUE = """
 </body>
 </html>
 """
+
 <!--HTML da tela de Fechamento de Caixa-->
+    
 HTML_FECHAMENTO = """
 <!DOCTYPE html>
 <html lang="pt-br">
