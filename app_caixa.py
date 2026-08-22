@@ -58,6 +58,7 @@ HTML_LOGIN = """
 
 # HTML para a tela Frente de Caixa (PDV) 
 
+HTML_CAIXA = """
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
@@ -292,6 +293,7 @@ HTML_LOGIN = """
    </script>
 </body>
 </html>
+"""
 
 # HTML da tela Entrada de Estoque 
 
