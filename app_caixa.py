@@ -106,6 +106,9 @@ HTML_CAIXA = """
         .user-info { font-size: 12px; color: #555; text-align: right; }
         .user-info a { color: #dc3545; text-decoration: none; margin-left: 6px; font-weight: bold; }
         .footer-system { text-align: center; margin-top: 20px; font-size: 11px; color: #888; border-top: 1px solid #e9ecef; padding-top: 10px; }
+        
+        /* Estilo do card de Pix */
+        .pix-card { background: #ffffff; width: 100%; max-width: 550px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; text-align: center; }
     </style>
 </head>
 <body>
@@ -160,7 +163,7 @@ HTML_CAIXA = """
        </div>
 
        <!-- CARD PRINCIPAL DE ENTRADA DE ITENS E FECHAMENTO -->
-       <div class="card">
+       <div class="card" id="cardPrincipal">
             <div style="text-align: center; margin-bottom: 10px;">
                 <div style="display: inline-block; width: 32px; height: 32px; background-color: #bc002d; border-radius: 50%; line-height: 32px; color: white; font-weight: bold; font-size: 15px; margin-bottom: 2px;">山</div>
                 <h2 style="color: #1a1a1a; font-size: 16px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
@@ -213,7 +216,7 @@ HTML_CAIXA = """
                 <input type="hidden" name="acao" value="finalizar">
                 
                 <label for="forma_pagamento">Forma de Pagamento:</label>
-                <select name="forma_pagamento" id="forma_pagamento">
+                <select name="forma_pagamento" id="forma_pagamento" onchange="tratarFormaPagamento()">
                     <option value="Dinheiro">Dinheiro</option>
                     <option value="Cartao">Cartão</option>
                     <option value="Pix">Pix</option>
@@ -222,16 +225,37 @@ HTML_CAIXA = """
                 <button type="submit" class="btn-success">✅ Finalizar Venda / Fechar Compra</button>
             </form>
             {% endif %}
-
-            {% if msg %}
-                <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() or 'adicionado' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
-            {% endif %}
-
-            <div class="footer-system">
-                Powered by <strong>Yamasaki Technology Solution</strong> 🚀
-            </div>
        </div>
+
+       <!-- CARD PIX COM O SEU QR CODE -->
+       <div class="pix-card" id="cardPix">
+            <h2 style="color: #007bff; margin-top: 0;">📱 Pagamento via Pix</h2>
+            <p>Escaneie o QR Code abaixo com o aplicativo do seu banco:</p>
+            
+            <div style="margin: 15px 0;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=00020126400014br.gov.bcb.pix0118py9dm.mt@gmail.com5204000053039865802BR5915BERSEJULIOCESAR6009Sao Paulo610901227-20062230519daqr2112582259416686304F335" alt="QR Code Pix" style="width: 200px; height: 200px; border-radius: 8px; border: 1px solid #ddd; padding: 5px; background: #fff;">
+            </div>
+            
+            <p style="font-size: 13px; color: #555;">Chave Pix: <strong>py9dm.mt@gmail.com</strong></p>
+            <p style="font-size: 16px; color: #28a745; font-weight: bold;">Valor: R$ {{ "%.2f"|format(total_compra_atual) }}</p>
+            
+            <!-- Botão para efetivar a venda após o pagamento via Pix -->
+            <form method="POST">
+                <input type="hidden" name="acao" value="finalizar">
+                <input type="hidden" name="forma_pagamento" value="Pix">
+                <button type="submit" class="btn-success" style="margin-top: 10px;">✅ Confirmar Recebimento Pix e Concluir</button>
+            </form>
+
+            <button type="button" onclick="voltarDoPix()" style="background-color: #6c757d; margin-top: 8px;">← Voltar / Alterar Pagamento</button>
+       </div>
+
    </div>
+
+   {% if msg %}
+       <div style="position: fixed; bottom: 10px; right: 10px; z-index: 999;" class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() or 'adicionado' in msg.lower() else 'msg-erro' }}">
+           {{ msg }}
+       </div>
+   {% endif %}
 
    <script>
         let precoUnitarioAtual = 0;
@@ -278,11 +302,24 @@ HTML_CAIXA = """
             document.getElementById('valor_total').innerText = 'R$ 0,00';
             precoUnitarioAtual = 0;
         }
+
+        // Funções para alternar a tela de Pix
+        function tratarFormaPagamento() {
+            const forma = document.getElementById('forma_pagamento').value;
+            if (forma === 'Pix') {
+                document.getElementById('cardPrincipal').style.display = 'none';
+                document.getElementById('cardPix').style.display = 'block';
+            }
+        }
+
+        function voltarDoPix() {
+            document.getElementById('forma_pagamento').value = 'Dinheiro';
+            document.getElementById('cardPix').style.display = 'none';
+            document.getElementById('cardPrincipal').style.display = 'block';
+        }
    </script>
 </body>
 </html>
-"""
-
 
 # HTML da tela Entrada de Estoque 
 
