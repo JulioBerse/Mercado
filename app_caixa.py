@@ -106,15 +106,13 @@ HTML_CAIXA = """
         .user-info { font-size: 12px; color: #555; text-align: right; }
         .user-info a { color: #dc3545; text-decoration: none; margin-left: 6px; font-weight: bold; }
         .footer-system { text-align: center; margin-top: 20px; font-size: 11px; color: #888; border-top: 1px solid #e9ecef; padding-top: 10px; }
-        
-        /* Estilo do card de Pix */
         .pix-card { background: #ffffff; width: 100%; max-width: 550px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; text-align: center; }
     </style>
 </head>
 <body>
    <div class="main-container">
         
-<!-- PAINEL LATERAL: ITENS DA COMPRA ATUAL -->
+       <!-- PAINEL LATERAL: ITENS DA COMPRA ATUAL -->
        <div class="cart-card">
            <h3>🛒 Itens da Compra Atual</h3>
            <div class="items-table-container">
@@ -149,26 +147,6 @@ HTML_CAIXA = """
                    </tbody>
                </table>
            </div>
-
-           <!-- Totalizador da Compra Atual -->
-           <div style="margin-top: 12px; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 10px; border-radius: 6px; text-align: center;">
-               <span style="font-size: 12px; color: #2e7d32; font-weight: bold;">TOTAL DA COMPRA:</span><br>
-               <span style="font-size: 18px; color: #2e7d32; font-weight: bold;">R$ {{ "%.2f"|format(total_compra_atual) }}</span>
-           </div>
-
-           <!-- Botão para cancelar/limpar a compra atual -->
-           {% if carrinho_atual %}
-           <form method="POST">
-               <input type="hidden" name="acao" value="cancelar">
-               <button type="submit" class="btn-danger">❌ Cancelar Compra Inteira</button>
-           </form>
-           {% endif %}
-
-           <div style="margin-top: 15px; font-size: 12px; color: #666; text-align: center;">
-               Total Geral do Caixa Hoje: <strong>R$ {{ "%.2f"|format(total_geral_dia) }}</strong><br>
-               Operador: <strong>{{ usuario }}</strong>
-           </div>
-       </div>
 
            <!-- Totalizador da Compra Atual -->
            <div style="margin-top: 12px; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 10px; border-radius: 6px; text-align: center;">
@@ -267,7 +245,6 @@ HTML_CAIXA = """
             <p style="font-size: 13px; color: #555;">Chave Pix: <strong>py9dm.mt@gmail.com</strong></p>
             <p style="font-size: 16px; color: #28a745; font-weight: bold;">Valor: R$ {{ "%.2f"|format(total_compra_atual) }}</p>
             
-            <!-- Botão para efetivar a venda após o pagamento via Pix -->
             <form method="POST">
                 <input type="hidden" name="acao" value="finalizar">
                 <input type="hidden" name="forma_pagamento" value="Pix">
@@ -292,7 +269,7 @@ HTML_CAIXA = """
             const identificador = document.getElementById('identificador').value.trim();
             if (!identificador) { resetarCampos(); return false; }
             try {
-                const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
+                const response = labelFetch = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
                 const data = await response.json();
                 if (data.sucesso) {
                     document.getElementById('nome_produto').innerText = data.nome;
@@ -331,7 +308,6 @@ HTML_CAIXA = """
             precoUnitarioAtual = 0;
         }
 
-        // Funções para alternar a tela de Pix
         function tratarFormaPagamento() {
             const forma = document.getElementById('forma_pagamento').value;
             if (forma === 'Pix') {
