@@ -678,7 +678,20 @@ def index():
             except Exception as e:
                 mensagem = f"Erro ao adicionar: {e}"
 
-        # AÇÃO 2: Finalizar a venda de todos os itens do carrinho
+        # AÇÃO 2: Remover um item específico do carrinho pelo índice
+        elif acao == 'remover':
+            try:
+                indice = int(request.form.get('indice'))
+                carrinho = session.get('carrinho_atual', [])
+                if 0 <= indice < len(carrinho):
+                    item_removido = carrinho.pop(indice)
+                    session['carrinho_atual'] = carrinho
+                    session.modified = True
+                    mensagem = f"Removido: {item_removido['nome']}"
+            except Exception as e:
+                mensagem = f"Erro ao remover item: {e}"
+
+        # AÇÃO 3: Finalizar a venda de todos os itens do carrinho
         elif acao == 'finalizar':
             carrinho = session.get('carrinho_atual', [])
             forma_pagto = request.form.get('forma_pagamento', 'Dinheiro')
@@ -719,7 +732,7 @@ def index():
                     conn.rollback()
                     mensagem = f"Erro ao fechar venda: {e}"
 
-        # AÇÃO 3: Limpar/Cancelar o carrinho atual
+        # AÇÃO 4: Limpar/Cancelar o carrinho atual
         elif acao == 'cancelar':
             session['carrinho_atual'] = []
             session.modified = True
@@ -748,20 +761,6 @@ def index():
         total_compra_atual=total_compra_atual,
         total_geral_dia=total_geral_dia
     )
-
-    # AÇÃO 4: Remover um item específico do carrinho pelo índice
-        elif acao == 'remover':
-            try:
-                indice = int(request.form.get('indice'))
-                carrinho = session.get('carrinho_atual', [])
-                if 0 <= indice < len(carrinho):
-                    item_removido = carrinho.pop(indice)
-                    session['carrinho_atual'] = carrinho
-                    session.modified = True
-                    mensagem = f"Removido: {item_removido['nome']}"
-            except Exception as e:
-                mensagem = f"Erro ao remover item: {e}"
-    
 @app.route('/fechamento', methods=['GET', 'POST'])
 def fechamento():
     if 'usuario' not in session:
