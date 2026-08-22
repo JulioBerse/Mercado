@@ -103,7 +103,7 @@ HTML_CAIXA = """
         
         .items-table-container {
             overflow-y: auto;
-            max-height: 450px;
+            max-height: 400px;
             margin-top: 10px;
             border: 1px solid #eee;
             border-radius: 6px;
@@ -178,7 +178,14 @@ HTML_CAIXA = """
                    </tbody>
                </table>
            </div>
-           <div style="margin-top: 15px; font-size: 12px; color: #666; text-align: center;">
+
+           <!-- Caixa de Total Acumulado do Dia -->
+           <div style="margin-top: 12px; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 10px; border-radius: 6px; text-align: center;">
+               <span style="font-size: 12px; color: #2e7d32; font-weight: bold;">TOTAL DO CAIXA HOJE:</span><br>
+               <span style="font-size: 17px; color: #2e7d32; font-weight: bold;">R$ {{ "%.2f"|format(total_geral_dia) }}</span>
+           </div>
+
+           <div style="margin-top: 10px; font-size: 12px; color: #666; text-align: center;">
                Operador atual: <strong>{{ usuario }}</strong>
            </div>
        </div>
@@ -294,7 +301,6 @@ HTML_CAIXA = """
 </body>
 </html>
 """
-
 # HTML da tela Entrada de Estoque 
 
 HTML_ESTOQUE = """
@@ -635,11 +641,24 @@ def index():
     """, (operador_atual,))
     ultimas_vendas = cur.fetchall()
 
+    # NOVO: Calcula o valor total vendido no dia por este operador
+    cur.execute("""
+        SELECT COALESCE(SUM(total), 0) 
+        FROM vendas 
+        WHERE data_venda::date = CURRENT_DATE AND operador = %s;
+    """, (operador_atual,))
+    total_geral_dia = cur.fetchone()[0]
+
     cur.close()
     conn.close()
 
-    return render_template_string(HTML_CAIXA, usuario=operador_atual, msg=mensagem, ultimas_vendas=ultimas_vendas)
-
+    return render_template_string(
+        HTML_CAIXA, 
+        usuario=operador_atual, 
+        msg=mensagem, 
+        ultimas_vendas=ultimas_vendas, 
+        total_geral_dia=total_geral_dia
+    )
 @app.route('/fechamento', methods=['GET', 'POST'])
 def fechamento():
     if 'usuario' not in session:
