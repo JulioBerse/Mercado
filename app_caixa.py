@@ -58,22 +58,17 @@ HTML_LOGIN = """
 
 # HTML para a tela Frente de Caixa (PDV) 
 
-HTML_CAIXA = """
 <!DOCTYPE html>
 <html lang="pt-br">
 <head>
-   <meta charset="UTF-8">
-   <title>Berse Supermercados - PDV</title>
-   <style>
+    <meta charset="UTF-8">
+    <title>Berse Supermercados - PDV</title>
+    <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
             margin: 0;
             min-height: 100vh;
             background-color: #f0f2f5;
-            background-image: 
-                linear-gradient(rgba(0, 0, 0, 0.02) 1px, transparent 1px),
-                linear-gradient(90deg, rgba(0, 0, 0, 0.02) 1px, transparent 1px);
-            background-size: 20px 20px;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -81,168 +76,222 @@ HTML_CAIXA = """
             box-sizing: border-box;
         }
         
-        .main-container { display: flex; gap: 20px; align-items: flex-start; max-width: 1000px; width: 100%; justify-content: center; }
+        /* Container principal dividido em colunas */
+        .main-container { 
+            display: flex; 
+            gap: 20px; 
+            align-items: flex-start; 
+            max-width: 1050px; 
+            width: 100%; 
+            justify-content: center; 
+        }
         
-        .pix-card { background: #ffffff; width: 100%; max-width: 350px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; text-align: center; }
-        .pix-card h3 { color: #007bff; margin-top: 0; font-size: 18px; border-bottom: 2px solid #007bff; padding-bottom: 8px; }
+        /* Painel lateral de itens passados (Carrinho / Cupom na Tela) */
+        .cart-card { 
+            background: #ffffff; 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 20px; 
+            border-radius: 12px; 
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
+            max-height: 600px;
+            display: flex;
+            flex-direction: column;
+        }
+        .cart-card h3 { color: #007bff; margin-top: 0; font-size: 16px; border-bottom: 2px solid #007bff; padding-bottom: 8px; }
+        
+        .items-table-container {
+            overflow-y: auto;
+            max-height: 450px;
+            margin-top: 10px;
+            border: 1px solid #eee;
+            border-radius: 6px;
+        }
+        .items-table {
+            width: 100%;
+            border-collapse: collapse;
+            font-size: 13px;
+        }
+        .items-table th, .items-table td {
+            padding: 8px;
+            text-align: left;
+            border-bottom: 1px solid #f0f2f5;
+        }
+        .items-table th {
+            background: #f8f9fa;
+            color: #666;
+            position: sticky;
+            top: 0;
+        }
 
-        .card { background: #ffffff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        .card { background: #ffffff; width: 100%; max-width: 550px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
         h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
-        label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
-        input, select { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #fff; }
+        label { display: block; margin-top: 12px; font-weight: 600; color: #444; font-size: 14px; }
+        input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; background-color: #fff; }
         input:focus, select:focus { border-color: #007bff; outline: none; }
-        button { margin-top: 25px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button { margin-top: 20px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         button:hover { background-color: #0056b3; }
-        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px; }
-        .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px; }
+        .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 12px; margin-top: 12px; }
+        .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 15px; }
         .info-row strong { color: #333; }
-        .total-box { font-size: 20px; color: #28a745; border-top: 2px solid #28a745; padding-top: 10px; margin-top: 10px; }
-        .msg { margin-top: 20px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; }
+        .total-box { font-size: 18px; color: #28a745; border-top: 2px solid #28a745; padding-top: 8px; margin-top: 8px; }
+        .msg { margin-top: 15px; padding: 10px; border-radius: 6px; font-weight: bold; text-align: center; font-size: 13px; }
         .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
         .msg-erro { background: #ffebee; color: #c62828; }
-        .nav-link { display: inline-block; margin-bottom: 15px; color: #28a745; text-decoration: none; font-weight: bold; }
-        .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; }
-        .brand-header h2 { color: #007bff; margin: 0; font-size: 20px; font-weight: bold; }
-        .user-info { font-size: 13px; color: #555; text-align: right; }
-        .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
-        .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
-   </style>
+        .nav-link { display: inline-block; margin-bottom: 10px; color: #28a745; text-decoration: none; font-weight: bold; font-size: 13px; }
+        .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e9ecef; padding-bottom: 8px; }
+        .brand-header h2 { color: #007bff; margin: 0; font-size: 18px; font-weight: bold; }
+        .user-info { font-size: 12px; color: #555; text-align: right; }
+        .user-info a { color: #dc3545; text-decoration: none; margin-left: 6px; font-weight: bold; }
+        .footer-system { text-align: center; margin-top: 20px; font-size: 11px; color: #888; border-top: 1px solid #e9ecef; padding-top: 10px; }
+        .pix-card { background: #ffffff; width: 100%; max-width: 350px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; text-align: center; }
+    </style>
 </head>
 <body>
    <div class="main-container">
-       <!-- PAINEL PIX REAL -->
-       <div id="painel-pix" class="pix-card">
-           <h3 style="color: #28a745; margin-top: 0;">Pagamento via Pix</h3>
-           <p style="font-size: 13px; color: #666; margin-bottom: 10px;">Escaneie o QR Code abaixo:</p>
-           
-           <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=00020126400014br.gov.bcb.pix0118py9dm.mt@gmail.com5204000053039865802BR5915BERSEJULIOCESAR6009Sao Paulo610901227-20062230519daqr2112582259416686304F335" alt="QR Code Pix" style="width: 200px; height: 200px; border-radius: 8px; border: 1px solid #ddd; padding: 5px; background: #fff;">
-           
-           <p style="font-size: 12px; color: #666; margin-top: 10px;">Ou copie o código Copia e Cola:</p>
-           <textarea readonly style="width: 100%; height: 50px; font-size: 10px; border: 1px solid #ccc; padding: 5px; resize: none; background: #f9f9f9;">00020126400014br.gov.bcb.pix0118py9dm.mt@gmail.com5204000053039865802BR5915BERSEJULIOCESAR6009Sao Paulo610901227-20062230519daqr2112582259416686304F335</textarea>
+        
+       <!-- PAINEL LATERAL: ITENS PASSADOS NO CAIXA (Hoje) -->
+       <div class="cart-card">
+           <h3>🛒 Últimos Itens Passados (Hoje)</h3>
+           <div class="items-table-container">
+               <table class="items-table">
+                   <thead>
+                       <tr>
+                           <th>Produto</th>
+                           <th>Qtd</th>
+                           <th>Total</th>
+                       </tr>
+                   </thead>
+                   <tbody>
+                       {% for item in ultimas_vendas %}
+                       <tr>
+                           <td>{{ item[0] }}</td>
+                           <td>{{ item[1] }}x</td>
+                           <td style="color: #28a745; font-weight: bold;">R$ {{ "%.2f"|format(item[2]) }}</td>
+                       </tr>
+                       {% else %}
+                       <tr>
+                           <td colspan="3" style="text-align: center; color: #888;">Nenhum item lançado ainda.</td>
+                       </tr>
+                       {% endfor %}
+                   </tbody>
+               </table>
+           </div>
+           <div style="margin-top: 15px; font-size: 12px; color: #666; text-align: center;">
+               Operador atual: <strong>{{ usuario }}</strong>
+           </div>
        </div>
 
        <!-- CARD PRINCIPAL DE VENDAS -->
        <div class="card">
-           <div style="text-align: center; margin-bottom: 15px;">
-               <div style="display: inline-block; width: 40px; height: 40px; background-color: #bc002d; border-radius: 50%; line-height: 40px; color: white; font-weight: bold; font-size: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 4px;">山</div>
-               <h2 style="color: #1a1a1a; font-size: 18px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
-               <span style="color: #666; font-size: 10px; letter-spacing: 3px; text-transform: uppercase;">山崎グループ</span>
-           </div>
-           <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 15px;">
+            <div style="text-align: center; margin-bottom: 10px;">
+                <div style="display: inline-block; width: 32px; height: 32px; background-color: #bc002d; border-radius: 50%; line-height: 32px; color: white; font-weight: bold; font-size: 15px; margin-bottom: 2px;">山</div>
+                <h2 style="color: #1a1a1a; font-size: 16px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
+            </div>
+            <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 12px;">
 
-           <div class="brand-header">
-               <h2>🏪 Frente de Caixa</h2>
-               <div class="user-info">
-                   Operador: <strong>{{ usuario }}</strong> <a href="/logout">[Sair]</a>
-               </div>
-           </div>
-           <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
-           <a class="nav-link" href="/fechamento" style="color: #bc002d;">📊 Fechamento de Caixa</a>
+            <div class="brand-header">
+                <h2>🏪 Frente de Caixa</h2>
+                <div class="user-info">
+                    <a href="/logout">[Sair]</a>
+                </div>
+            </div>
+            <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
+            <a class="nav-link" href="/fechamento" style="color: #bc002d; margin-left: 10px;">📊 Fechamento</a>
 
-           <form id="formVenda" method="POST" action="/">
-               <label for="identificador">ID ou Código de Barras do Produto:</label>
-               <input type="text" id="identificador" name="identificador" placeholder="Digite o ID/Código e pressione TAB ou ENTER" required autofocus onblur="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
-               
-               <label for="forma_pagamento">Forma de Pagamento:</label>
-               <select name="forma_pagamento" id="forma_pagamento" onchange="verificarPix()">
-                   <option value="Dinheiro">Dinheiro</option>
-                   <option value="Cartao">Cartão</option>
-                   <option value="Pix">Pix</option>
-               </select>
+            <form id="formVenda" method="POST" action="/">
+                <label for="identificador">ID ou Código de Barras:</label>
+                <input type="text" id="identificador" name="identificador" placeholder="Digite ou bipe o código" required autofocus onblur="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
+                
+                <label for="forma_pagamento">Forma de Pagamento:</label>
+                <select name="forma_pagamento" id="forma_pagamento">
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Cartao">Cartão</option>
+                    <option value="Pix">Pix</option>
+                </select>
 
-               <div class="info-box">
-                   <div class="info-row">
-                       <span>Produto:</span>
-                       <strong id="nome_produto">Aguardando busca...</strong>
-                   </div>
-                   <div class="info-row">
-                       <span>Valor Unitário:</span>
-                       <strong id="valor_unitario">R$ 0,00</strong>
-                   </div>
-               </div>
+                <div class="info-box">
+                    <div class="info-row">
+                        <span>Produto:</span>
+                        <strong id="nome_produto">Aguardando busca...</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Valor Unitário:</span>
+                        <strong id="valor_unitario">R$ 0,00</strong>
+                    </div>
+                </div>
 
-               <label for="quantidade">Quantidade:</label>
-               <input type="number" id="quantidade" name="quantidade" value="1" min="1" required oninput="calcularTotal()" onkeydown="tratarTeclaQuantidade(event)">
+                <label for="quantidade">Quantidade:</label>
+                <input type="number" id="quantidade" name="quantidade" value="1" min="1" required oninput="calcularTotal()" onkeydown="tratarTeclaQuantidade(event)">
 
-               <div class="info-box total-box">
-                   <div class="info-row">
-                       <span>VALOR TOTAL:</span>
-                       <strong id="valor_total">R$ 0,00</strong>
-                   </div>
-               </div>
+                <div class="info-box total-box">
+                    <div class="info-row">
+                        <span>VALOR TOTAL:</span>
+                        <strong id="valor_total">R$ 0,00</strong>
+                    </div>
+                </div>
 
-               <button type="submit" id="btnFinalizar">Registrar Venda (ENTER)</button>
-           </form>
+                <button type="submit" id="btnFinalizar">Registrar Venda (ENTER)</button>
+            </form>
 
-           {% if msg %}
-               <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
-           {% endif %}
+            {% if msg %}
+                <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
+            {% endif %}
 
-           <div class="footer-system">
-               Powered by <strong>Yamasaki Technology Solution</strong> 🚀
-           </div>
+            <div class="footer-system">
+                Powered by <strong>Yamasaki Technology Solution</strong> 🚀
+            </div>
        </div>
    </div>
 
    <script>
-       let precoUnitarioAtual = 0;
+        let precoUnitarioAtual = 0;
 
-       function verificarPix() {
-           const formaPagto = document.getElementById('forma_pagamento').value;
-           const painelPix = document.getElementById('painel-pix');
-           if (formaPagto === 'Pix') {
-               painelPix.style.display = 'block';
-           } else {
-               painelPix.style.display = 'none';
-           }
-       }
+        async function buscarProduto() {
+            const identificador = document.getElementById('identificador').value.trim();
+            if (!identificador) { resetarCampos(); return false; }
+            try {
+                const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
+                const data = await response.json();
+                if (data.sucesso) {
+                    document.getElementById('nome_produto').innerText = data.nome;
+                    precoUnitarioAtual = parseFloat(data.preco);
+                    document.getElementById('valor_unitario').innerText = 'R$ ' + precoUnitarioAtual.toFixed(2).replace('.', ',');
+                    calcularTotal();
+                    return true;
+                } else {
+                    document.getElementById('nome_produto').innerText = 'Produto não encontrado';
+                    resetarCampos();
+                    return false;
+                }
+            } catch (e) { resetarCampos(); return false; }
+        }
 
-       async function buscarProduto() {
-           const identificador = document.getElementById('identificador').value.trim();
-           if (!identificador) { resetarCampos(); return false; }
-           try {
-               const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
-               const data = await response.json();
-               if (data.sucesso) {
-                   document.getElementById('nome_produto').innerText = data.nome;
-                   precoUnitarioAtual = parseFloat(data.preco);
-                   document.getElementById('valor_unitario').innerText = 'R$ ' + precoUnitarioAtual.toFixed(2).replace('.', ',');
-                   calcularTotal();
-                   return true;
-               } else {
-                   document.getElementById('nome_produto').innerText = 'Produto não encontrado';
-                   resetarCampos();
-                   return false;
-               }
-           } catch (e) { resetarCampos(); return false; }
-       }
-
-       async function tratarTeclaIdentificador(e) {
-           if (e.key === 'Enter' || e.key === 'Tab') {
-               e.preventDefault();
-               const achou = await buscarProduto();
-               if (achou) {
-                   const campoQtd = document.getElementById('quantidade');
-                   campoQtd.focus();
-                   campoQtd.select();
-               }
-           }
-       }
-       function tratarTeclaQuantidade(e) { if (e.key === 'Enter') { calcularTotal(); } }
-       function calcularTotal() {
-           const qtd = parseInt(document.getElementById('quantidade').value) || 0;
-           const total = precoUnitarioAtual * qtd;
-           document.getElementById('valor_total').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
-       }
-       function resetarCampos() {
-           document.getElementById('valor_unitario').innerText = 'R$ 0,00';
-           document.getElementById('valor_total').innerText = 'R$ 0,00';
-           precoUnitarioAtual = 0;
-       }
+        async function tratarTeclaIdentificador(e) {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                const achou = await buscarProduto();
+                if (achou) {
+                    const campoQtd = document.getElementById('quantidade');
+                    campoQtd.focus();
+                    campoQtd.select();
+                }
+            }
+        }
+        function tratarTeclaQuantidade(e) { if (e.key === 'Enter') { calcularTotal(); } }
+        function calcularTotal() {
+            const qtd = parseInt(document.getElementById('quantidade').value) || 0;
+            const total = precoUnitarioAtual * qtd;
+            document.getElementById('valor_total').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
+        }
+        function resetarCampos() {
+            document.getElementById('valor_unitario').innerText = 'R$ 0,00';
+            document.getElementById('valor_total').innerText = 'R$ 0,00';
+            precoUnitarioAtual = 0;
+        }
    </script>
 </body>
 </html>
-"""
 
 # HTML da tela Entrada de Estoque 
 
@@ -526,12 +575,14 @@ def index():
 
     operador_atual = session['usuario']
     mensagem = None
+    
+    conn = conectar_banco()
+    cur = conn.cursor()
+
     if request.method == 'POST':
         identificador = request.form.get('identificador', '').strip()
         quantidade = int(request.form.get('quantidade', 1))
         
-        conn = conectar_banco()
-        cur = conn.cursor()
         try:
             if identificador.isdigit():
                 cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
@@ -553,80 +604,39 @@ def index():
             else:
                 cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
 
-            # 1. Inserção no Backup/Histórico
+            # Inserção no Backup/Histórico
             cur.execute(
                 "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'VENDA', %s);",
                 (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
             )
 
-          # 2. INSERÇÃO NA TABELA VENDAS COM OS NOME CORRETOS DAS COLUNAS
+            # Inserção na tabela vendas
             forma_pagto = request.form.get('forma_pagamento', 'Dinheiro')
             cur.execute(
                 "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade, operador) VALUES (NOW(), %s, %s, %s, %s, %s);",
                 (total_venda, forma_pagto, nome_produto, quantidade, operador_atual)
             )
-            # 👆 FIM DO CÓDIGO NOVO
 
             conn.commit()
             mensagem = f"Venda realizada com sucesso! ({quantidade}x {nome_produto} - R$ {total_venda:.2f})"
         except Exception as e:
             conn.rollback()
             mensagem = f"Erro ao realizar venda: {e}"
-        finally:
-            cur.close()
-            conn.close()
 
-    return render_template_string(HTML_CAIXA, usuario=operador_atual, msg=mensagem)
-@app.route('/estoque/entrada', methods=['GET', 'POST'])
-def estoque_entrada():
-    if 'usuario' not in session:
-        return redirect(url_for('login'))
+    # Busca as últimas vendas do dia para preencher a janela lateral
+    cur.execute("""
+        SELECT produto, quantidade, total 
+        FROM vendas 
+        WHERE data_venda::date = CURRENT_DATE AND operador = %s
+        ORDER BY data_venda DESC
+        LIMIT 20;
+    """, (operador_atual,))
+    ultimas_vendas = cur.fetchall()
 
-    operador_atual = session['usuario']
-    mensagem = None
-    if request.method == 'POST':
-        identificador = request.form.get('identificador', '').strip()
-        quantidade = int(request.form.get('quantidade', 1))
+    cur.close()
+    conn.close()
 
-        conn = conectar_banco()
-        cur = conn.cursor()
-        try:
-            if identificador.isdigit():
-                cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
-            else:
-                cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
-
-            produto = cur.fetchone()
-            if not produto:
-                raise Exception("Produto não encontrado no cadastro!")
-
-            prod_id = produto[0]
-            codigo_barra = produto[1]
-            nome_produto = produto[2]
-            preco_unitario = float(produto[3])
-
-            if identificador.isdigit():
-                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s;", (quantidade, int(identificador)))
-            else:
-                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s;", (quantidade, identificador))
-
-            # Inserção no Backup/Histórico de Entrada de Estoque incluindo o Operador Logado
-            cur.execute(
-                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'ENTRADA', %s);",
-                (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
-            )
-
-            conn.commit()
-            mensagem = f"Estoque atualizado com sucesso! ({quantidade:+d} unidades de {nome_produto})"
-        except Exception as e:
-            conn.rollback()
-            mensagem = f"Erro ao atualizar estoque: {e}"
-        finally:
-            cur.close()
-            conn.close()
-
-    return render_template_string(HTML_ESTOQUE, usuario=operador_atual, msg=mensagem)
-    # ... (suas outras rotas como @app.route('/login') e @app.route('/'))
+    return render_template_string(HTML_CAIXA, usuario=operador_atual, msg=mensagem, ultimas_vendas=ultimas_vendas)
 
 @app.route('/fechamento', methods=['GET', 'POST'])
 def fechamento():
