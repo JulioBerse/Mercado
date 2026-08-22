@@ -114,7 +114,7 @@ HTML_CAIXA = """
 <body>
    <div class="main-container">
         
-       <!-- PAINEL LATERAL: ITENS DA COMPRA ATUAL -->
+<!-- PAINEL LATERAL: ITENS DA COMPRA ATUAL -->
        <div class="cart-card">
            <h3>🛒 Itens da Compra Atual</h3>
            <div class="items-table-container">
@@ -124,6 +124,7 @@ HTML_CAIXA = """
                            <th>Produto</th>
                            <th>Qtd</th>
                            <th>Total</th>
+                           <th style="text-align: center;">Ação</th>
                        </tr>
                    </thead>
                    <tbody>
@@ -132,15 +133,42 @@ HTML_CAIXA = """
                            <td>{{ item.nome }}</td>
                            <td>{{ item.quantidade }}x</td>
                            <td style="color: #28a745; font-weight: bold;">R$ {{ "%.2f"|format(item.total) }}</td>
+                           <td style="text-align: center;">
+                               <form method="POST" style="margin: 0; display: inline;">
+                                   <input type="hidden" name="acao" value="remover">
+                                   <input type="hidden" name="indice" value="{{ loop.index0 }}">
+                                   <button type="submit" title="Remover item" style="background: none; border: none; color: #dc3545; cursor: pointer; font-size: 14px; padding: 2px 6px; font-weight: bold;">❌</button>
+                               </form>
+                           </td>
                        </tr>
                        {% else %}
                        <tr>
-                           <td colspan="3" style="text-align: center; color: #888;">Nenhum item na compra atual.</td>
+                           <td colspan="4" style="text-align: center; color: #888;">Nenhum item na compra atual.</td>
                        </tr>
                        {% endfor %}
                    </tbody>
                </table>
            </div>
+
+           <!-- Totalizador da Compra Atual -->
+           <div style="margin-top: 12px; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 10px; border-radius: 6px; text-align: center;">
+               <span style="font-size: 12px; color: #2e7d32; font-weight: bold;">TOTAL DA COMPRA:</span><br>
+               <span style="font-size: 18px; color: #2e7d32; font-weight: bold;">R$ {{ "%.2f"|format(total_compra_atual) }}</span>
+           </div>
+
+           <!-- Botão para cancelar/limpar a compra atual -->
+           {% if carrinho_atual %}
+           <form method="POST">
+               <input type="hidden" name="acao" value="cancelar">
+               <button type="submit" class="btn-danger">❌ Cancelar Compra Inteira</button>
+           </form>
+           {% endif %}
+
+           <div style="margin-top: 15px; font-size: 12px; color: #666; text-align: center;">
+               Total Geral do Caixa Hoje: <strong>R$ {{ "%.2f"|format(total_geral_dia) }}</strong><br>
+               Operador: <strong>{{ usuario }}</strong>
+           </div>
+       </div>
 
            <!-- Totalizador da Compra Atual -->
            <div style="margin-top: 12px; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 10px; border-radius: 6px; text-align: center;">
@@ -720,6 +748,19 @@ def index():
         total_compra_atual=total_compra_atual,
         total_geral_dia=total_geral_dia
     )
+
+    # AÇÃO 4: Remover um item específico do carrinho pelo índice
+        elif acao == 'remover':
+            try:
+                indice = int(request.form.get('indice'))
+                carrinho = session.get('carrinho_atual', [])
+                if 0 <= indice < len(carrinho):
+                    item_removido = carrinho.pop(indice)
+                    session['carrinho_atual'] = carrinho
+                    session.modified = True
+                    mensagem = f"Removido: {item_removido['nome']}"
+            except Exception as e:
+                mensagem = f"Erro ao remover item: {e}"
     
 @app.route('/fechamento', methods=['GET', 'POST'])
 def fechamento():
