@@ -76,62 +76,23 @@ HTML_CAIXA = """
             padding: 20px;
             box-sizing: border-box;
         }
-        
-        /* Container principal dividido em colunas */
-        .main-container { 
-            display: flex; 
-            gap: 20px; 
-            align-items: flex-start; 
-            max-width: 1050px; 
-            width: 100%; 
-            justify-content: center; 
-        }
-        
-        /* Painel lateral de itens passados (Carrinho / Cupom na Tela) */
-        .cart-card { 
-            background: #ffffff; 
-            width: 100%; 
-            max-width: 400px; 
-            padding: 20px; 
-            border-radius: 12px; 
-            box-shadow: 0 4px 15px rgba(0,0,0,0.1); 
-            max-height: 600px;
-            display: flex;
-            flex-direction: column;
-        }
+        .main-container { display: flex; gap: 20px; align-items: flex-start; max-width: 1050px; width: 100%; justify-content: center; }
+        .cart-card { background: #ffffff; width: 100%; max-width: 400px; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: flex; flex-direction: column; }
         .cart-card h3 { color: #007bff; margin-top: 0; font-size: 16px; border-bottom: 2px solid #007bff; padding-bottom: 8px; }
-        
-        .items-table-container {
-            overflow-y: auto;
-            max-height: 400px;
-            margin-top: 10px;
-            border: 1px solid #eee;
-            border-radius: 6px;
-        }
-        .items-table {
-            width: 100%;
-            border-collapse: collapse;
-            font-size: 13px;
-        }
-        .items-table th, .items-table td {
-            padding: 8px;
-            text-align: left;
-            border-bottom: 1px solid #f0f2f5;
-        }
-        .items-table th {
-            background: #f8f9fa;
-            color: #666;
-            position: sticky;
-            top: 0;
-        }
-
+        .items-table-container { overflow-y: auto; max-height: 350px; margin-top: 10px; border: 1px solid #eee; border-radius: 6px; }
+        .items-table { width: 100%; border-collapse: collapse; font-size: 13px; }
+        .items-table th, .items-table td { padding: 8px; text-align: left; border-bottom: 1px solid #f0f2f5; }
+        .items-table th { background: #f8f9fa; color: #666; position: sticky; top: 0; }
         .card { background: #ffffff; width: 100%; max-width: 550px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
-        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #007bff; padding-bottom: 10px; }
         label { display: block; margin-top: 12px; font-weight: 600; color: #444; font-size: 14px; }
         input, select { width: 100%; padding: 10px; margin-top: 5px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 14px; background-color: #fff; }
         input:focus, select:focus { border-color: #007bff; outline: none; }
-        button { margin-top: 20px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
+        button { margin-top: 15px; width: 100%; padding: 12px; background-color: #007bff; color: white; border: none; border-radius: 6px; font-size: 16px; font-weight: bold; cursor: pointer; transition: background 0.2s; }
         button:hover { background-color: #0056b3; }
+        .btn-success { background-color: #28a745; }
+        .btn-success:hover { background-color: #218838; }
+        .btn-danger { background-color: #dc3545; font-size: 13px; padding: 8px; margin-top: 8px; }
+        .btn-danger:hover { background-color: #c82333; }
         .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 12px; margin-top: 12px; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 15px; }
         .info-row strong { color: #333; }
@@ -145,15 +106,14 @@ HTML_CAIXA = """
         .user-info { font-size: 12px; color: #555; text-align: right; }
         .user-info a { color: #dc3545; text-decoration: none; margin-left: 6px; font-weight: bold; }
         .footer-system { text-align: center; margin-top: 20px; font-size: 11px; color: #888; border-top: 1px solid #e9ecef; padding-top: 10px; }
-        .pix-card { background: #ffffff; width: 100%; max-width: 350px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; text-align: center; }
     </style>
 </head>
 <body>
    <div class="main-container">
         
-       <!-- PAINEL LATERAL: ITENS PASSADOS NO CAIXA (Hoje) -->
+       <!-- PAINEL LATERAL: ITENS DA COMPRA ATUAL -->
        <div class="cart-card">
-           <h3>🛒 Últimos Itens Passados (Hoje)</h3>
+           <h3>🛒 Itens da Compra Atual</h3>
            <div class="items-table-container">
                <table class="items-table">
                    <thead>
@@ -164,33 +124,42 @@ HTML_CAIXA = """
                        </tr>
                    </thead>
                    <tbody>
-                       {% for item in ultimas_vendas %}
+                       {% for item in carrinho_atual %}
                        <tr>
-                           <td>{{ item[0] }}</td>
-                           <td>{{ item[1] }}x</td>
-                           <td style="color: #28a745; font-weight: bold;">R$ {{ "%.2f"|format(item[2]) }}</td>
+                           <td>{{ item.nome }}</td>
+                           <td>{{ item.quantidade }}x</td>
+                           <td style="color: #28a745; font-weight: bold;">R$ {{ "%.2f"|format(item.total) }}</td>
                        </tr>
                        {% else %}
                        <tr>
-                           <td colspan="3" style="text-align: center; color: #888;">Nenhum item lançado ainda.</td>
+                           <td colspan="3" style="text-align: center; color: #888;">Nenhum item na compra atual.</td>
                        </tr>
                        {% endfor %}
                    </tbody>
                </table>
            </div>
 
-           <!-- Caixa de Total Acumulado do Dia -->
+           <!-- Totalizador da Compra Atual -->
            <div style="margin-top: 12px; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 10px; border-radius: 6px; text-align: center;">
-               <span style="font-size: 12px; color: #2e7d32; font-weight: bold;">TOTAL DO CAIXA HOJE:</span><br>
-               <span style="font-size: 17px; color: #2e7d32; font-weight: bold;">R$ {{ "%.2f"|format(total_geral_dia) }}</span>
+               <span style="font-size: 12px; color: #2e7d32; font-weight: bold;">TOTAL DA COMPRA:</span><br>
+               <span style="font-size: 18px; color: #2e7d32; font-weight: bold;">R$ {{ "%.2f"|format(total_compra_atual) }}</span>
            </div>
 
-           <div style="margin-top: 10px; font-size: 12px; color: #666; text-align: center;">
-               Operador atual: <strong>{{ usuario }}</strong>
+           <!-- Botão para cancelar/limpar a compra atual -->
+           {% if carrinho_atual %}
+           <form method="POST">
+               <input type="hidden" name="acao" value="cancelar">
+               <button type="submit" class="btn-danger">❌ Cancelar Compra</button>
+           </form>
+           {% endif %}
+
+           <div style="margin-top: 15px; font-size: 12px; color: #666; text-align: center;">
+               Total Geral do Caixa Hoje: <strong>R$ {{ "%.2f"|format(total_geral_dia) }}</strong><br>
+               Operador: <strong>{{ usuario }}</strong>
            </div>
        </div>
 
-       <!-- CARD PRINCIPAL DE VENDAS -->
+       <!-- CARD PRINCIPAL DE ENTRADA DE ITENS E FECHAMENTO -->
        <div class="card">
             <div style="text-align: center; margin-bottom: 10px;">
                 <div style="display: inline-block; width: 32px; height: 32px; background-color: #bc002d; border-radius: 50%; line-height: 32px; color: white; font-weight: bold; font-size: 15px; margin-bottom: 2px;">山</div>
@@ -207,17 +176,13 @@ HTML_CAIXA = """
             <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
             <a class="nav-link" href="/fechamento" style="color: #bc002d; margin-left: 10px;">📊 Fechamento</a>
 
-            <form id="formVenda" method="POST" action="/">
+            <!-- FORMULÁRIO 1: Adicionar item ao carrinho -->
+            <form id="formVenda" method="POST">
+                <input type="hidden" name="acao" value="adicionar">
+                
                 <label for="identificador">ID ou Código de Barras:</label>
                 <input type="text" id="identificador" name="identificador" placeholder="Digite ou bipe o código" required autofocus onblur="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
                 
-                <label for="forma_pagamento">Forma de Pagamento:</label>
-                <select name="forma_pagamento" id="forma_pagamento">
-                    <option value="Dinheiro">Dinheiro</option>
-                    <option value="Cartao">Cartão</option>
-                    <option value="Pix">Pix</option>
-                </select>
-
                 <div class="info-box">
                     <div class="info-row">
                         <span>Produto:</span>
@@ -234,16 +199,32 @@ HTML_CAIXA = """
 
                 <div class="info-box total-box">
                     <div class="info-row">
-                        <span>VALOR TOTAL:</span>
+                        <span>TOTAL DO ITEM:</span>
                         <strong id="valor_total">R$ 0,00</strong>
                     </div>
                 </div>
 
-                <button type="submit" id="btnFinalizar">Registrar Venda (ENTER)</button>
+                <button type="submit" id="btnAdicionar">Adicionar Item (ENTER)</button>
             </form>
 
+            <!-- FORMULÁRIO 2: Finalizar a Compra inteira -->
+            {% if carrinho_atual %}
+            <form method="POST" style="margin-top: 15px; border-top: 2px dashed #007bff; padding-top: 15px;">
+                <input type="hidden" name="acao" value="finalizar">
+                
+                <label for="forma_pagamento">Forma de Pagamento:</label>
+                <select name="forma_pagamento" id="forma_pagamento">
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Cartao">Cartão</option>
+                    <option value="Pix">Pix</option>
+                </select>
+
+                <button type="submit" class="btn-success">✅ Finalizar Venda / Fechar Compra</button>
+            </form>
+            {% endif %}
+
             {% if msg %}
-                <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
+                <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() or 'adicionado' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
             {% endif %}
 
             <div class="footer-system">
@@ -301,6 +282,8 @@ HTML_CAIXA = """
 </body>
 </html>
 """
+
+
 # HTML da tela Entrada de Estoque 
 
 HTML_ESTOQUE = """
@@ -583,65 +566,104 @@ def index():
 
     operador_atual = session['usuario']
     mensagem = None
-    
+
+    # Inicializa o carrinho temporário na sessão se não existir
+    if 'carrinho_atual' not in session:
+        session['carrinho_atual'] = []
+
     conn = conectar_banco()
     cur = conn.cursor()
 
     if request.method == 'POST':
-        identificador = request.form.get('identificador', '').strip()
-        quantidade = int(request.form.get('quantidade', 1))
-        
-        try:
-            if identificador.isdigit():
-                cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
-            else:
-                cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
+        acao = request.form.get('acao')
 
-            produto = cur.fetchone()
-            if not produto:
-                raise Exception("Produto não encontrado no cadastro!")
+        # AÇÃO 1: Adicionar item ao carrinho atual
+        if acao == 'adicionar':
+            identificador = request.form.get('identificador', '').strip()
+            quantidade = int(request.form.get('quantidade', 1))
+            
+            try:
+                if identificador.isdigit():
+                    cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s;", (int(identificador),))
+                else:
+                    cur.execute(f"SELECT id, codigo_barra, nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barra = %s;", (identificador,))
 
-            prod_id = produto[0]
-            codigo_barra = produto[1]
-            nome_produto = produto[2]
-            preco_unitario = float(produto[3])
-            total_venda = preco_unitario * quantidade
+                produto = cur.fetchone()
+                if not produto:
+                    raise Exception("Produto não encontrado no cadastro!")
 
-            if identificador.isdigit():
-                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, int(identificador)))
-            else:
-                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE codigo_barra = %s;", (quantidade, identificador))
+                prod_id = produto[0]
+                codigo_barra = produto[1]
+                nome_produto = produto[2]
+                preco_unitario = float(produto[3])
+                total_item = preco_unitario * quantidade
 
-            # Inserção no Backup/Histórico
-            cur.execute(
-                "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'VENDA', %s);",
-                (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
-            )
+                # Adiciona na lista temporária da sessão
+                session['carrinho_atual'].append({
+                    'id': prod_id,
+                    'codigo_barra': codigo_barra,
+                    'nome': nome_produto,
+                    'preco': preco_unitario,
+                    'quantidade': quantidade,
+                    'total': total_item
+                })
+                session.modified = True
+                mensagem = f"Adicionado: {quantidade}x {nome_produto}"
+            except Exception as e:
+                mensagem = f"Erro ao adicionar: {e}"
 
-            # Inserção na tabela vendas
+        # AÇÃO 2: Finalizar a venda de todos os itens do carrinho
+        elif acao == 'finalizar':
+            carrinho = session.get('carrinho_atual', [])
             forma_pagto = request.form.get('forma_pagamento', 'Dinheiro')
-            cur.execute(
-                "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade, operador) VALUES (NOW(), %s, %s, %s, %s, %s);",
-                (total_venda, forma_pagto, nome_produto, quantidade, operador_atual)
-            )
 
-            conn.commit()
-            mensagem = f"Venda realizada com sucesso! ({quantidade}x {nome_produto} - R$ {total_venda:.2f})"
-        except Exception as e:
-            conn.rollback()
-            mensagem = f"Erro ao realizar venda: {e}"
+            if not carrinho:
+                mensagem = "O carrinho está vazio!"
+            else:
+                try:
+                    for item in carrinho:
+                        prod_id = item['id']
+                        codigo_barra = item['codigo_barra']
+                        nome_produto = item['nome']
+                        preco_unitario = item['preco']
+                        quantidade = item['quantidade']
+                        total_venda = item['total']
 
-    # Busca as últimas vendas do dia para preencher a janela lateral
-    cur.execute("""
-        SELECT produto, quantidade, total 
-        FROM vendas 
-        WHERE data_venda::date = CURRENT_DATE AND operador = %s
-        ORDER BY data_venda DESC
-        LIMIT 20;
-    """, (operador_atual,))
-    ultimas_vendas = cur.fetchall()
+                        # Dá baixa no estoque
+                        cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s;", (quantidade, prod_id))
 
-    # NOVO: Calcula o valor total vendido no dia por este operador
+                        # Insere no Backup
+                        cur.execute(
+                            "INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, data_movimento, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, NOW(), 'VENDA', %s);",
+                            (prod_id, codigo_barra, nome_produto, preco_unitario, quantidade, operador_atual)
+                        )
+
+                        # Insere na tabela vendas
+                        cur.execute(
+                            "INSERT INTO vendas (data_venda, total, forma_pagamento, produto, quantidade, operador) VALUES (NOW(), %s, %s, %s, %s, %s);",
+                            (total_venda, forma_pagto, nome_produto, quantidade, operador_atual)
+                        )
+
+                    conn.commit()
+                    # Zera o carrinho após finalizar com sucesso
+                    session['carrinho_atual'] = []
+                    session.modified = True
+                    mensagem = "Venda realizada com sucesso!"
+                except Exception as e:
+                    conn.rollback()
+                    mensagem = f"Erro ao fechar venda: {e}"
+
+        # AÇÃO 3: Limpar/Cancelar o carrinho atual
+        elif acao == 'cancelar':
+            session['carrinho_atual'] = []
+            session.modified = True
+            mensagem = "Venda cancelada/limpa com sucesso!"
+
+    # Calcula o total geral da compra atual que está na tela
+    carrinho_atual = session.get('carrinho_atual', [])
+    total_compra_atual = sum(item['total'] for item in carrinho_atual)
+
+    # Busca o total geral vendido no dia por este operador para o rodapé/indicador
     cur.execute("""
         SELECT COALESCE(SUM(total), 0) 
         FROM vendas 
@@ -656,9 +678,11 @@ def index():
         HTML_CAIXA, 
         usuario=operador_atual, 
         msg=mensagem, 
-        ultimas_vendas=ultimas_vendas, 
+        carrinho_atual=carrinho_atual,
+        total_compra_atual=total_compra_atual,
         total_geral_dia=total_geral_dia
     )
+    
 @app.route('/fechamento', methods=['GET', 'POST'])
 def fechamento():
     if 'usuario' not in session:
