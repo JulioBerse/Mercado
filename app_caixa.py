@@ -320,6 +320,7 @@ HTML_CAIXA = """
    </script>
 </body>
 </html>
+"""
 
 # HTML da tela Entrada de Estoque 
 
