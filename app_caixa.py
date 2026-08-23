@@ -1348,7 +1348,7 @@ def caixa():
             session['carrinho_atual'] = []
             session.modified = True
 
-        elif acao == 'finalizar':
+       elif acao == 'finalizar':
             carrinho = session.get('carrinho_atual', [])
             if carrinho:
                 forma_pagamento = request.form.get('forma_pagamento', 'Dinheiro')
@@ -1375,7 +1375,7 @@ def caixa():
                         res_prod = cur.fetchone()
                         codigo_barra = res_prod[0] if res_prod and res_prod[0] else ''
 
-                        # 4. Gravação segura na tabela produtobkp (agora testada e garantida)
+                        # 4. Gravação na tabela produtobkp
                         cur.execute(
                             """
                             INSERT INTO produtobkp 
@@ -1385,6 +1385,7 @@ def caixa():
                             (item['id'], codigo_barra, item['nome'], item['preco'], item['quantidade'], 'VENDA', usuario)
                         )
                         
+                    # O commit e o fechamento ficam FORA do loop para salvar todos os itens de uma vez
                     conn.commit()
                     cur.close()
                     conn.close()
@@ -1396,7 +1397,6 @@ def caixa():
                     if 'conn' in locals() and conn:
                         conn.rollback()
                     msg = f"Erro ao finalizar venda: {e}"
-
     total_compra_atual = sum(item['total'] for item in session['carrinho_atual'])
     
     return render_template_string(
