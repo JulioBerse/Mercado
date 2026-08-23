@@ -8,21 +8,20 @@ app.secret_key = "chave_secreta_super_segura_berse"
 
 TABELA_PRODUTO = "produto"
 TABELA_USUARIO = "usuario"
+TABELA_VENDAS = "vendas"
 
 def conectar_banco():
     db_url = os.environ.get('DATABASE_URL')
     if not db_url:
         raise ValueError("A variável de ambiente DATABASE_URL não está configurada!")
     
-    # Corrige se a URL começar com postgres:// para postgresql:// (comum no Neon/Render)
     if db_url.startswith("postgres://"):
         db_url = db_url.replace("postgres://", "postgresql://", 1)
         
-    # Conecta passando explicitamente parâmetros de SSL se necessário para o Neon
     return psycopg2.connect(db_url, sslmode='require')
 
 # ==========================================
-# 1. TEMPLATES HTML COM ESTILOS PADRÕES E LOGO
+# 1. TEMPLATES HTML
 # ==========================================
 
 HTML_LOGIN = """
@@ -107,9 +106,6 @@ HTML_CAIXA = """
         .info-row { display: flex; justify-content: space-between; margin-bottom: 6px; font-size: 15px; }
         .info-row strong { color: #333; }
         .total-box { font-size: 18px; color: #28a745; border-top: 2px solid #28a745; padding-top: 8px; margin-top: 8px; }
-        .msg { margin-top: 15px; padding: 10px; border-radius: 6px; font-weight: bold; text-align: center; font-size: 13px; }
-        .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
-        .msg-erro { background: #ffebee; color: #c62828; }
         .nav-link { display: inline-block; margin-bottom: 10px; color: #28a745; text-decoration: none; font-weight: bold; font-size: 13px; }
         .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px; border-bottom: 1px solid #e9ecef; padding-bottom: 8px; }
         .brand-header h2 { color: #007bff; margin: 0; font-size: 18px; font-weight: bold; }
@@ -457,12 +453,13 @@ HTML_FECHAMENTO = """
     <title>Fechamento de Caixa - Grupo Yamasaki</title>
     <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; padding: 30px; }
-        .card { background: #ffffff; width: 100%; max-width: 800px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
+        .card { background: #ffffff; width: 100%; max-width: 850px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
         h1 { color: #bc002d; margin-top: 0; font-size: 22px; border-bottom: 2px solid #bc002d; padding-bottom: 10px; }
         .nav-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 13px; }
         th { background-color: #f8f9fa; color: #333; }
+        .total-geral { margin-top: 15px; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 12px; border-radius: 6px; text-align: right; font-size: 16px; color: #2e7d32; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -476,22 +473,40 @@ HTML_FECHAMENTO = """
         <h1>📊 Painel de Fechamento de Caixa</h1>
         <a class="nav-link" href="/">← Voltar para a Frente de Caixa</a>
         
-        <p>Resumo operacional do dia para o operador: <strong>{{ usuario }}</strong></p>
+        <p>Resumo de vendas registradas no NeonDB (Operador atual: <strong>{{ usuario }}</strong>)</p>
         
         <table>
             <thead>
                 <tr>
                     <th>Data/Hora</th>
-                    <th>Forma de Pagamento</th>
-                    <th>Valor Total</th>
+                    <th>Operador</th>
+                    <th>Produto</th>
+                    <th>Qtd</th>
+                    <th>Pagamento</th>
+                    <th>Total</th>
                 </tr>
             </thead>
             <tbody>
+                {% for venda in vendas %}
                 <tr>
-                    <td colspan="3" style="text-align: center; color: #666;">Nenhum registro de fechamento hoje.</td>
+                    <td>{{ venda.data_venda }}</td>
+                    <td>{{ venda.operador }}</td>
+                    <td>{{ venda.produto }}</td>
+                    <td>{{ venda.quantidade }}x</td>
+                    <td>{{ venda.forma_pagamento }}</td>
+                    <td style="color: #28a745; font-weight: bold;">R$ {{ "%.2f"|format(venda.total) }}</td>
                 </tr>
+                {% else %}
+                <tr>
+                    <td colspan="6" style="text-align: center; color: #666;">Nenhum registro de venda encontrado.</td>
+                </tr>
+                {% endfor %}
             </tbody>
         </table>
+
+        <div class="total-geral">
+            TOTAL GERAL VENDIDO: R$ {{ "%.2f"|format(total_geral) }}
+        </div>
     </div>
 </body>
 </html>
@@ -510,7 +525,7 @@ def login():
         try:
             conn = conectar_banco()
             cur = conn.cursor()
-            cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE username = %s AND senha = %s", (username, password))
+            cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE login = %s AND senha = %s", (username, password))
             user = cur.fetchone()
             cur.close()
             conn.close()
@@ -550,9 +565,9 @@ def caixa():
                 cur = conn.cursor()
                 
                 if identificador.isdigit():
-                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barras = %s", (int(identificador), identificador))
+                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barra = %s", (int(identificador), identificador))
                 else:
-                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barras = %s", (identificador,))
+                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s", (identificador,))
                 
                 produto = cur.fetchone()
                 cur.close()
@@ -585,9 +600,36 @@ def caixa():
             session.modified = True
 
         elif acao == 'finalizar':
-            session['carrinho_atual'] = []
-            session.modified = True
-            msg = "Venda finalizada com sucesso!"
+            carrinho = session.get('carrinho_atual', [])
+            if carrinho:
+                forma_pagamento = request.form.get('forma_pagamento', 'Dinheiro')
+                
+                try:
+                    conn = conectar_banco()
+                    cur = conn.cursor()
+                    
+                    # Salva cada item individualmente mapeando exatamente para as colunas da tabela 'vendas'
+                    for item in carrinho:
+                        cur.execute(
+                            f"INSERT INTO {TABELA_VENDAS} (operador, forma_pagamento, produto, quantidade, total) VALUES (%s, %s, %s, %s, %s)",
+                            (usuario, forma_pagamento, item['nome'], item['quantidade'], item['total'])
+                        )
+                        
+                        # Dá baixa automática no estoque do produto
+                        cur.execute(
+                            f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s",
+                            (item['quantidade'], item['id'])
+                        )
+                        
+                    conn.commit()
+                    cur.close()
+                    conn.close()
+
+                    session['carrinho_atual'] = []
+                    session.modified = True
+                    msg = "Venda finalizada e sincronizada com o NeonDB!"
+                except Exception as e:
+                    msg = f"Erro ao sincronizar venda com o NeonDB: {e}"
 
     total_compra_atual = sum(item['total'] for item in session['carrinho_atual'])
     
@@ -607,9 +649,9 @@ def buscar_produto():
         cur = conn.cursor()
         
         if q.isdigit():
-            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barras = %s", (int(q), q))
+            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barra = %s", (int(q), q))
         else:
-            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barras = %s", (q,))
+            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s", (q,))
             
         produto = cur.fetchone()
         cur.close()
@@ -637,13 +679,13 @@ def estoque_entrada():
             conn = conectar_banco()
             cur = conn.cursor()
             if identificador.isdigit():
-                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s OR codigo_barras = %s", (quantidade, int(identificador), identificador))
+                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s OR codigo_barra = %s", (quantidade, int(identificador), identificador))
             else:
-                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barras = %s", (quantidade, identificador))
+                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s", (quantidade, identificador))
             conn.commit()
             cur.close()
             conn.close()
-            msg = "Estoque atualizado com sucesso!"
+            msg = "Estoque atualizado e sincronizado com sucesso!"
         except Exception as e:
             msg = f"Erro ao atualizar estoque: {e}"
 
@@ -653,7 +695,38 @@ def estoque_entrada():
 def fechamento():
     if 'usuario' not in session:
         return redirect(url_for('login'))
-    return render_template_string(HTML_FECHAMENTO, usuario=session['usuario'])
+    
+    vendas = []
+    total_geral = 0.0
+    try:
+        conn = conectar_banco()
+        cur = conn.cursor()
+        cur.execute(f"SELECT data_venda, operador, produto, quantidade, forma_pagamento, total FROM {TABELA_VENDAS} ORDER BY data_venda DESC")
+        rows = cur.fetchall()
+        cur.close()
+        conn.close()
+
+        for row in rows:
+            data_formatada = row[0].strftime('%d/%m/%Y %H:%M:%S') if row[0] else ''
+            val = float(row[5])
+            vendas.append({
+                'data_venda': data_formatada,
+                'operador': row[1],
+                'produto': row[2],
+                'quantidade': row[3],
+                'forma_pagamento': row[4],
+                'total': val
+            })
+            total_geral += val
+    except Exception as e:
+        print(f"Erro ao carregar fechamento do banco: {e}")
+
+    return render_template_string(
+        HTML_FECHAMENTO, 
+        usuario=session['usuario'],
+        vendas=vendas,
+        total_geral=total_geral
+    )
 
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
