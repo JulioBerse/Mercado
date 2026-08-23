@@ -1294,6 +1294,20 @@ def logout():
 
 @app.route('/', methods=['GET', 'POST'])
 def caixa():
+    # TESTE RÁPIDO DE INSERÇÃO DIRETA
+    try:
+        conn_teste = conectar_banco()
+        cur_teste = conn_teste.cursor()
+        cur_teste.execute(
+            "INSERT INTO produtobkp (produto_id, nome, quantidade_vendida, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s)",
+            (999, "TESTE MANUAL", 1, "TESTE", "sistema")
+        )
+        conn_teste.commit()
+        cur_teste.close()
+        conn_teste.close()
+        print(">>> TESTE MANUAL GRAVOU NA PRODUTOBKP COM SUCESSO! <<<")
+    except Exception as err_teste pipa: # noqa
+        print(f">>> FALHA NO TESTE MANUAL DA PRODUTOBKP: {err_teste}")
     if 'usuario' not in session:
         return redirect(url_for('login'))
     
