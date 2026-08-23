@@ -24,13 +24,18 @@ def conectar_banco():
 def registrar_backup(cur, prod_id, nome, preco, estoque, operacao, responsavel):
     """Função auxiliar para garantir que qualquer operação vá para a tabela de backup (PRODUTOBKP)."""
     try:
+        # Garante conversões seguras para evitar rejeição do Postgres
+        p_id = int(prod_id) if str(prod_id).isdigit() else 0
+        p_preco = float(preco) if preco is not None else 0.0
+        p_estoque = int(estoque) if estoque is not None else 0
+        
         cur.execute(
             f"INSERT INTO {TABELA_PRODUTOBKP} (produto_id, nome, preco, estoque, operacao, responsavel) VALUES (%s, %s, %s, %s, %s, %s)",
-            (prod_id, nome, preco, estoque, operacao, responsavel)
+            (p_id, str(nome), p_preco, p_estoque, str(operacao), str(responsavel))
         )
     except Exception as e:
-        print(f"Erro ao registrar backup na tabela {TABELA_PRODUTOBKP}: {e}")
-
+        print(f"ERRO CRÍTICO NO REGISTRAR_BACKUP: {e}")
+        raise e  # Força a parada para sabermos qual coluna/dado falhou
 # ==========================================
 # 1. TEMPLATES HTML
 # ==========================================
