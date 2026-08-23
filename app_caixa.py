@@ -1294,27 +1294,33 @@ def logout():
 
 @app.route('/', methods=['GET', 'POST'])
 def caixa():
-    # TESTE RÁPIDO DE INSERÇÃO DIRETA
-    try:
-        conn_teste = conectar_banco()
-        cur_teste = conn_teste.cursor()
-        cur_teste.execute(
-            "INSERT INTO produtobkp (produto_id, nome, quantidade_vendida, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s)",
-            (999, "TESTE MANUAL", 1, "TESTE", "sistema")
-        )
-        conn_teste.commit()
-        cur_teste.close()
-        conn_teste.close()
-        print(">>> TESTE MANUAL GRAVOU NA PRODUTOBKP COM SUCESSO! <<<")
-    except Exception as err_teste:
-        print(f">>> FALHA NO TESTE MANUAL DA PRODUTOBKP: {err_teste}")
-
+   if 'usuario' not in session:
+        return redirect(url_for('login'))
     
+    usuario = session['usuario']
+
+    @app.route('/', methods=['GET', 'POST'])
+def caixa():
     if 'usuario' not in session:
         return redirect(url_for('login'))
     
     usuario = session['usuario']
-    msg = None
+    
+    # --- TESTE VISUAL NA TELA ---
+    try:
+        conn_t = conectar_banco()
+        cur_t = conn_t.cursor()
+        cur_t.execute(
+            "INSERT INTO produtobkp (produto_id, nome, quantidade_vendida, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s)",
+            (888, "TESTE TELA", 1, "TESTE", usuario)
+        )
+        conn_t.commit()
+        cur_t.close()
+        conn_t.close()
+        return "DEU CERTO: A inserção na produtobkp ocorreu com sucesso absoluto!"
+    except Exception as e_tela:
+        return f"FALHA RETORNADA PELO BANCO: {str(e_tela)}"
+    # ----------------------------
 
     if 'carrinho_atual' not in session:
         session['carrinho_atual'] = []
