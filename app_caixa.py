@@ -10,15 +10,19 @@ TABELA_PRODUTO = "produto"
 TABELA_USUARIO = "usuario"
 
 def conectar_banco():
-    # Pega a URL do ambiente (Neon ou Render)
     db_url = os.environ.get('DATABASE_URL')
     if not db_url:
         raise ValueError("A variável de ambiente DATABASE_URL não está configurada!")
-    # O Neon usa SSL por padrão, o psycopg2 lida bem com a URL completa do Neon
-    return psycopg2.connect(db_url)
+    
+    # Corrige se a URL começar com postgres:// para postgresql:// (comum no Neon/Render)
+    if db_url.startswith("postgres://"):
+        db_url = db_url.replace("postgres://", "postgresql://", 1)
+        
+    # Conecta passando explicitamente parâmetros de SSL se necessário para o Neon
+    return psycopg2.connect(db_url, sslmode='require')
 
 # ==========================================
-# 1. TEMPLATES HTML
+# 1. TEMPLATES HTML COM ESTILOS PADRÕES E LOGO
 # ==========================================
 
 HTML_LOGIN = """
@@ -40,7 +44,10 @@ HTML_LOGIN = """
 </head>
 <body>
    <div class="login-card">
-        <h2>🏪 GRUPO YAMASAKI</h2>
+        <div style="text-align: center; margin-bottom: 15px;">
+            <div style="display: inline-block; width: 36px; height: 36px; background-color: #bc002d; border-radius: 50%; line-height: 36px; color: white; font-weight: bold; font-size: 16px; margin-bottom: 4px;">山</div>
+            <h2 style="color: #1a1a1a; font-size: 16px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
+        </div>
         <p style="text-align: center; color: #666; font-size: 14px;">Faça login para acessar o PDV</p>
         
         <form method="POST">
@@ -114,7 +121,6 @@ HTML_CAIXA = """
 <body>
    <div class="main-container">
         
-       <!-- PAINEL LATERAL: ITENS DA COMPRA ATUAL -->
        <div class="cart-card">
             <h3>🛒 Itens da Compra Atual</h3>
             <div class="items-table-container">
@@ -167,7 +173,6 @@ HTML_CAIXA = """
             </div>
        </div>
 
-       <!-- CARD PRINCIPAL DE ENTRADA DE ITENS -->
        <div class="card" id="cardPrincipal">
             <div style="text-align: center; margin-bottom: 10px;">
                 <div style="display: inline-block; width: 32px; height: 32px; background-color: #bc002d; border-radius: 50%; line-height: 32px; color: white; font-weight: bold; font-size: 15px; margin-bottom: 2px;">山</div>
@@ -233,7 +238,6 @@ HTML_CAIXA = """
             {% endif %}
        </div>
 
-       <!-- CARD PIX -->
        <div class="pix-card" id="cardPix">
             <h2 style="color: #007bff; margin-top: 0;">📱 Pagamento via Pix</h2>
             <p>Escaneie o QR Code abaixo com o aplicativo do seu banco:</p>
@@ -366,6 +370,12 @@ HTML_ESTOQUE = """
 </head>
 <body>
  <div class="card">
+        <div style="text-align: center; margin-bottom: 15px;">
+            <div style="display: inline-block; width: 36px; height: 36px; background-color: #bc002d; border-radius: 50%; line-height: 36px; color: white; font-weight: bold; font-size: 16px; margin-bottom: 4px;">山</div>
+            <h2 style="color: #1a1a1a; font-size: 16px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
+        </div>
+        <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 15px;">
+
         <div class="brand-header">
             <h2>📦 Gerenciamento de Estoque</h2>
             <div style="font-size: 13px; color: #555;">
@@ -446,8 +456,8 @@ HTML_FECHAMENTO = """
     <meta charset="UTF-8">
     <title>Fechamento de Caixa - Grupo Yamasaki</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; padding: 30px; }
-        .card { background: #ffffff; max-width: 800px; margin: auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; padding: 30px; }
+        .card { background: #ffffff; width: 100%; max-width: 800px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
         h1 { color: #bc002d; margin-top: 0; font-size: 22px; border-bottom: 2px solid #bc002d; padding-bottom: 10px; }
         .nav-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-weight: bold; }
         table { width: 100%; border-collapse: collapse; margin-top: 15px; }
@@ -457,6 +467,12 @@ HTML_FECHAMENTO = """
 </head>
 <body>
     <div class="card">
+        <div style="text-align: center; margin-bottom: 15px;">
+            <div style="display: inline-block; width: 36px; height: 36px; background-color: #bc002d; border-radius: 50%; line-height: 36px; color: white; font-weight: bold; font-size: 16px; margin-bottom: 4px;">山</div>
+            <h2 style="color: #1a1a1a; font-size: 16px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
+        </div>
+        <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 15px;">
+
         <h1>📊 Painel de Fechamento de Caixa</h1>
         <a class="nav-link" href="/">← Voltar para a Frente de Caixa</a>
         
@@ -533,7 +549,6 @@ def caixa():
                 conn = conectar_banco()
                 cur = conn.cursor()
                 
-                # Tratamento robusto para buscar por ID numérico ou Código de Barras string
                 if identificador.isdigit():
                     cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barras = %s", (int(identificador), identificador))
                 else:
