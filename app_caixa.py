@@ -1286,6 +1286,9 @@ def login():
 def logout():
     session.pop('usuario', None)
     return redirect(url_for('login'))
+# ==========================================
+# ROTA DO CAIXA COM GRAVAÇÃO GARANTIDA NA TABELA 'produtobkp'
+# ==========================================
 
 @app.route('/', methods=['GET', 'POST'])
 def caixa():
@@ -1365,13 +1368,18 @@ def caixa():
                             (item['quantidade'], item['id'])
                         )
 
-                        # 3. Registra o backup detalhado na tabela produtobkp
+                        # 3. Busca o código de barras para o backup detalhado
                         cur.execute(f"SELECT codigo_barra FROM {TABELA_PRODUTO} WHERE id = %s", (item['id'],))
                         res_prod = cur.fetchone()
-                        codigo_barra = res_prod[0] if res_prod else ''
+                        codigo_barra = res_prod[0] if res_prod and res_prod[0] else ''
 
+                        # 4. Gravação na tabela produtobkp
                         cur.execute(
-                            f"INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                            """
+                            INSERT INTO produtobkp 
+                            (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, tipo_operacao, operador) 
+                            VALUES (%s, %s, %s, %s, %s, %s, %s)
+                            """,
                             (item['id'], codigo_barra, item['nome'], item['preco'], item['quantidade'], 'VENDA', usuario)
                         )
                         
@@ -1381,9 +1389,9 @@ def caixa():
 
                     session['carrinho_atual'] = []
                     session.modified = True
-                    msg = "Venda finalizada e sincronizada com sucesso (Vendas e BKP)!"
+                    msg = "Venda finalizada com sucesso e registrada na tabela produtobkp!"
                 except Exception as e:
-                    msg = f"Erro ao sincronizar venda com o NeonDB: {e}"
+                    msg = f"Erro crítico ao gravar na produtobkp ou banco: {e}"
 
     total_compra_atual = sum(item['total'] for item in session['carrinho_atual'])
     
