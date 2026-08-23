@@ -853,102 +853,55 @@ def realizar_fechamento():
     except Exception as e:
         return f"Erro ao realizar fechamento: {e}"
 
-@app.route('/fechamento')
-def fechamento():
+@app.route('/realizar_fechamento', methods=['POST'])
+def realizar_fechamento():
     if 'usuario' not in session:
         return redirect(url_for('login'))
     
-    data_filtro = request.args.get('data', '').strip()
-    if not data_filtro:
-        data_filtro = datetime.now().strftime('%Y-%m-%d')
-        
-    operador_filtro = request.args.get('operador', 'todos').strip()
+    usuario = session['usuario']
+    data_alvo = request.form.get('data_fechamento', datetime.now().strftime('%Y-%m-%d'))
+    operador_alvo = request.form.get('operador_fechamento', 'todos')
     
-    vendas = []
-    total_geral = 0.0
-    total_quantidade = 0
-    lista_operadores = []
-    
-    dias_semana = {
-        'Monday': 'Segunda-feira', 'Tuesday': 'Terça-feira', 'Wednesday': 'Quarta-feira',
-        'Thursday': 'Quinta-feira', 'Friday': 'Sexta-feira', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
-    }
-    meses = {
-        1: 'janeiro', 2: 'fevereiro', 3: 'março', 4: 'abril', 5: 'maio', 6: 'junho',
-        7: 'julho', 8: 'agosto', 9: 'setembro', 10: 'outubro', 11: 'novembro', 12: 'dezembro'
-    }
-
-    try:
-        dt_obj = datetime.strptime(data_filtro, '%Y-%m-%d')
-        dia_sem = dias_semana.get(dt_obj.strftime('%A'), '')
-        mes_nome = meses.get(dt_obj.month, '')
-        data_extenso = f"{dia_sem}, {dt_obj.day} de {mes_nome} de {dt_obj.year}"
-    except:
-        data_extenso = data_filtro
-
+    conn = None
     try:
         conn = conectar_banco()
         cur = conn.cursor()
         
-        cur.execute(f"SELECT DISTINCT login FROM {TABELA_USUARIO} ORDER BY login")
-        ops = cur.fetchall()
-        lista_operadores = [op[0] for op in ops]
-
-        if operador_filtro == 'todos':
-            query = f"""
-                SELECT data_venda, operador, produto, quantidade, forma_pagamento, total 
-                FROM {TABELA_VENDAS} 
-                WHERE DATE(data_venda) = %s 
-                ORDER BY data_venda DESC
-            """
-            cur.execute(query, (data_filtro,))
+        # 1. Calcula o resumo do dia para salvar no backup do fechamento
+        if operador_alvo == 'todos':
+            cur.execute(f"SELECT SUM(total), SUM(quantidade), COUNT(*) FROM {TABELA_VENDAS} WHERE DATE(data_venda) = %s", (data_alvo,))
         else:
-            query = f"""
-                SELECT data_venda, operador, produto, quantidade, forma_pagamento, total 
-                FROM {TABELA_VENDAS} 
-                WHERE operador = %s AND DATE(data_venda) = %s 
-                ORDER BY data_venda DESC
-            """
-            cur.execute(query, (operador_filtro, data_filtro))
-            
-        rows = cur.fetchall()
+            cur.execute(f"SELECT SUM(total), SUM(quantidade), COUNT(*) FROM {TABELA_VENDAS} WHERE operador = %s AND DATE(data_venda) = %s", (operador_alvo, data_alvo))
+        
+        resumo = cur.fetchone()
+        total_venda = float(resumo[0]) if resumo and resumo[0] else 0.0
+        total_qtd = int(resumo[1]) if resumo and resumo[1] else 0
+        total_transacoes = int(resumo[2]) if resumo and resumo[2] else 0
+        
+        detalhes_fechamento = f"FECHAMENTO OFICIAL - Data: {data_alvo} - Op: {operador_alvo} | Total: R$ {total_venda:.2f} | Itens: {total_qtd} | Vendas: {total_transacoes}"
+        
+        # 2. Grava o evento de fechamento oficial no PRODUTOBKP com os dados consolidados
+        registrar_backup(cur, 0, detalhes_fechamento, total_venda, total_qtd, "FECHAMENTO_CAIXA", usuario)
+        
+        conn.commit()
         cur.close()
         conn.close()
-
-        for row in rows:
-            data_str = row[0].strftime('%d/%m/%Y %H:%M:%S') if row[0] else ''
-            val = float(row[5])
-            qtd = int(row[3])
-            vendas.append({
-                'data_venda_str': data_str,
-                'operador': row[1],
-                'produto': row[2],
-                'quantidade': qtd,
-                'forma_pagamento': row[4],
-                'total': val
-            })
-            total_geral += val
-            total_quantidade += qtd
+        
+        # Redireciona de volta para o fechamento passando uma mensagem ou parâmetro de sucesso
+        return redirect(url_for('fechamento', data=data_alvo, operador=operador_alvo, sucesso=1))
+        
     except Exception as e:
-        print(f"Erro ao carregar fechamento do banco: {e}")
-
-    ticket_medio = (total_geral / len(vendas)) if len(vendas) > 0 else 0.0
-
-    return render_template_string(
-        HTML_FECHAMENTO, 
-        usuario=session['usuario'],
-        vendas=vendas,
-        total_geral=total_geral,
-        total_quantidade=total_quantidade,
-        ticket_medio=ticket_medio,
-        data_selecionada=data_filtro,
-        data_extenso=data_extenso,
-        lista_operadores=lista_operadores,
-        operador_selecionado=operador_filtro
-    )
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
-
+        if conn:
+            try:
+                conn.rollback()
+            except:
+                pass
+        print(f"ERRO AO REALIZAR FECHAMENTO: {e}")
+        return f"Erro ao realizar fechamento: {e}"
+    finally:
+        if conn:
+            try:
+                conn.close()
+            except:
+                pass
 
