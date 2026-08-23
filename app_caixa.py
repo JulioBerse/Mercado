@@ -1,6 +1,6 @@
 import os
 import psycopg2
-from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for
+from flask import Flask, render_template_string, request, jsonify, session, redirect, url_for, flash
 from datetime import datetime
 
 app = Flask(__name__)
