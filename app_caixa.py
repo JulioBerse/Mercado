@@ -9,6 +9,7 @@ app.secret_key = "chave_secreta_super_segura_berse"
 TABELA_PRODUTO = "produto"
 TABELA_USUARIO = "usuario"
 TABELA_VENDAS = "vendas"
+TABELA_PRODUTOBKP = "produtobkp"
 
 def conectar_banco():
     db_url = os.environ.get('DATABASE_URL')
@@ -19,6 +20,16 @@ def conectar_banco():
         db_url = db_url.replace("postgres://", "postgresql://", 1)
         
     return psycopg2.connect(db_url, sslmode='require')
+
+def registrar_backup(cur, prod_id, nome, preco, estoque, operacao, responsavel):
+    """Função auxiliar para garantir que qualquer operação vá para a tabela de backup (PRODUTOBKP)."""
+    try:
+        cur.execute(
+            f"INSERT INTO {TABELA_PRODUTOBKP} (produto_id, nome, preco, estoque, operacao, responsavel) VALUES (%s, %s, %s, %s, %s, %s)",
+            (prod_id, nome, preco, estoque, operacao, responsavel)
+        )
+    except Exception as e:
+        print(f"Erro ao registrar backup na tabela {TABELA_PRODUTOBKP}: {e}")
 
 # ==========================================
 # 1. TEMPLATES HTML
@@ -116,8 +127,7 @@ HTML_CAIXA = """
 </head>
 <body>
    <div class="main-container">
-        
-       <div class="cart-card">
+        <div class="cart-card">
             <h3>🛒 Itens da Compra Atual</h3>
             <div class="items-table-container">
                 <table class="items-table">
@@ -253,7 +263,6 @@ HTML_CAIXA = """
 
             <button type="button" onclick="voltarDoPix()" style="background-color: #6c757d; margin-top: 8px;">← Voltar / Alterar Pagamento</button>
        </div>
-
    </div>
 
    {% if msg %}
@@ -459,14 +468,12 @@ HTML_FECHAMENTO = """
         .nav-link { color: #007bff; text-decoration: none; font-weight: bold; font-size: 14px; }
         .nav-link:hover { text-decoration: underline; }
         
-        /* Dashboard Cards */
         .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
         .dash-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
         .dash-card h4 { margin: 0; font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
         .dash-card .value { font-size: 20px; font-weight: bold; color: #333; margin-top: 8px; }
         .dash-card.highlight .value { color: #28a745; }
 
-        /* Filter Form */
         .filter-form { background: #fdfdfd; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
         .filter-group { flex: 1; min-width: 200px; }
         .filter-group label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 5px; }
@@ -474,7 +481,6 @@ HTML_FECHAMENTO = """
         .btn-filter { background-color: #007bff; color: white; border: none; padding: 9px 20px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; height: 38px; }
         .btn-filter:hover { background-color: #0056b3; }
 
-        /* Table */
         .table-container { overflow-x: auto; border: 1px solid #eee; border-radius: 8px; max-height: 400px; }
         table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
         th, td { padding: 12px 15px; border-bottom: 1px solid #eee; }
@@ -497,6 +503,21 @@ HTML_FECHAMENTO = """
         <div class="header-top">
             <h1>📊 Painel de Fechamento de Caixa</h1>
             <a class="nav-link" href="/">← Voltar para Frente de Caixa</a>
+        </div>
+
+        <!-- Botão de Fechamento de Caixa Integrado -->
+        <div style="background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
+            <div>
+                <h3 style="margin: 0; color: #856404; font-size: 15px;">🔒 Ação de Fechamento Oficial</h3>
+                <p style="margin: 4px 0 0 0; font-size: 12px; color: #666;">Consolide e registre o fechamento do caixa atual com salvamento automático no backup.</p>
+            </div>
+            <form method="POST" action="/realizar_fechamento" style="margin: 0;">
+                <input type="hidden" name="data_fechamento" value="{{ data_selecionada }}">
+                <input type="hidden" name="operador_fechamento" value="{{ operador_selecionado }}">
+                <button type="submit" style="background-color: #bc002d; color: white; border: none; padding: 10px 18px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer;">
+                    🚀 Fechar Caixa Agora
+                </button>
+            </form>
         </div>
 
         <!-- Filtro por Data e Operador -->
@@ -583,6 +604,7 @@ HTML_FECHAMENTO = """
 </body>
 </html>
 """
+
 
 # ==========================================
 # 2. ROTAS DO FLASK
@@ -681,15 +703,22 @@ def caixa():
                     cur = conn.cursor()
                     
                     for item in carrinho:
+                        # 1. Registra a venda
                         cur.execute(
                             f"INSERT INTO {TABELA_VENDAS} (operador, forma_pagamento, produto, quantidade, total) VALUES (%s, %s, %s, %s, %s)",
                             (usuario, forma_pagamento, item['nome'], item['quantidade'], item['total'])
                         )
                         
+                        # 2. Atualiza o estoque do produto
                         cur.execute(
-                            f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s",
+                            f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s RETURNING id, nome, preco, estoque",
                             (item['quantidade'], item['id'])
                         )
+                        prod_atualizado = cur.fetchone()
+                        
+                        # 3. Alimenta a tabela PRODUTOBKP obrigatoriamente (Backup da Venda/Baixa)
+                        if prod_atualizado:
+                            registrar_backup(cur, prod_atualizado[0], prod_atualizado[1], prod_atualizado[2], prod_atualizado[3], "VENDA_BAIXA_ESTOQUE", usuario)
                         
                     conn.commit()
                     cur.close()
@@ -697,9 +726,9 @@ def caixa():
 
                     session['carrinho_atual'] = []
                     session.modified = True
-                    msg = "Venda finalizada e sincronizada com o NeonDB!"
+                    msg = "Venda finalizada e sincronizada com segurança!"
                 except Exception as e:
-                    msg = f"Erro ao sincronizar venda com o NeonDB: {e}"
+                    msg = f"Erro ao sincronizar venda: {e}"
 
     total_compra_atual = sum(item['total'] for item in session['carrinho_atual'])
     
@@ -748,25 +777,62 @@ def estoque_entrada():
         try:
             conn = conectar_banco()
             cur = conn.cursor()
+            
             if identificador.isdigit():
-                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s OR codigo_barra = %s", (quantidade, int(identificador), identificador))
+                cur.execute(
+                    f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s OR codigo_barra = %s RETURNING id, nome, preco, estoque",
+                    (quantidade, int(identificador), identificador)
+                )
             else:
-                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s", (quantidade, identificador))
+                cur.execute(
+                    f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s RETURNING id, nome, preco, estoque",
+                    (quantidade, identificador)
+                )
+                
+            produto_atualizado = cur.fetchone()
+            
+            if produto_atualizado:
+                # Alimenta a tabela PRODUTOBKP obrigatoriamente (Backup de Estoque)
+                registrar_backup(cur, produto_atualizado[0], produto_atualizado[1], produto_atualizado[2], produto_atualizado[3], "ENTRADA_ESTOQUE", usuario)
+
             conn.commit()
             cur.close()
             conn.close()
-            msg = "Estoque atualizado e sincronizado com sucesso!"
+            msg = "Estoque atualizado e salvo no backup com sucesso!"
         except Exception as e:
             msg = f"Erro ao atualizar estoque: {e}"
 
     return render_template_string(HTML_ESTOQUE, usuario=usuario, msg=msg)
+
+@app.route('/realizar_fechamento', methods=['POST'])
+def realizar_fechamento():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+    
+    usuario = session['usuario']
+    data_alvo = request.form.get('data_fechamento')
+    operador_alvo = request.form.get('operador_fechamento')
+    
+    try:
+        conn = conectar_banco()
+        cur = conn.cursor()
+        
+        # Grava o evento de fechamento de caixa oficial no PRODUTOBKP
+        registrar_backup(cur, 0, f"FECHAMENTO_CAIXA - Data: {data_alvo} - Op: {operador_alvo}", 0.0, 0, "FECHAMENTO_TURNO", usuario)
+        
+        conn.commit()
+        cur.close()
+        conn.close()
+        
+        return redirect(url_for('fechamento'))
+    except Exception as e:
+        return f"Erro ao realizar fechamento: {e}"
 
 @app.route('/fechamento')
 def fechamento():
     if 'usuario' not in session:
         return redirect(url_for('login'))
     
-    # Parâmetros de Filtro
     data_filtro = request.args.get('data', '').strip()
     if not data_filtro:
         data_filtro = datetime.now().strftime('%Y-%m-%d')
@@ -799,12 +865,10 @@ def fechamento():
         conn = conectar_banco()
         cur = conn.cursor()
         
-        # Buscar lista de todos os operadores cadastrados para preencher o select
         cur.execute(f"SELECT DISTINCT login FROM {TABELA_USUARIO} ORDER BY login")
         ops = cur.fetchall()
         lista_operadores = [op[0] for op in ops]
 
-        # Monta a query dinamicamente baseada no filtro de operador
         if operador_filtro == 'todos':
             query = f"""
                 SELECT data_venda, operador, produto, quantidade, forma_pagamento, total 
