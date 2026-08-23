@@ -1306,8 +1306,10 @@ def caixa():
         cur_teste.close()
         conn_teste.close()
         print(">>> TESTE MANUAL GRAVOU NA PRODUTOBKP COM SUCESSO! <<<")
-    except Exception as err_teste pipa: # noqa
+    except Exception as err_teste:
         print(f">>> FALHA NO TESTE MANUAL DA PRODUTOBKP: {err_teste}")
+
+    
     if 'usuario' not in session:
         return redirect(url_for('login'))
     
