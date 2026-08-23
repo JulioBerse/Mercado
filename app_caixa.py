@@ -1257,7 +1257,7 @@ HTML_FECHAMENTO = """
 """
 
 # ==========================================
-# 2. ROTAS DO FLASK
+# 2. ROTAS DO FLASK (Versão Corrigida e Limpa)
 # ==========================================
 
 @app.route('/login', methods=['GET', 'POST'])
@@ -1394,167 +1394,6 @@ def caixa():
         total_compra_atual=total_compra_atual,
         msg=msg
     )
-@app.route('/buscar_produto')
-def buscar_produto():
-    q = request.args.get('q', '').strip()
-    try:
-        conn = conectar_banco()
-        cur = conn.cursor()
-        
-        if q.isdigit():
-            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barra = %s", (int(q), q))
-        else:
-            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s", (q,))
-            
-        produto = cur.fetchone()
-        cur.close()
-        conn.close()
-
-        if produto:
-            return jsonify({'sucesso': True, 'nome': produto[0], 'preco': float(produto[1]), 'estoque': produto[2]})
-        else:
-            return jsonify({'sucesso': False})
-    except Exception as e:
-        return jsonify({'sucesso': False, 'erro': str(e)})
-
-@app.route('/estoque/entrada', methods=['GET', 'POST'])
-def estoque_entrada():
-    if 'usuario' not in session:
-        return redirect(url_for('login'))
-    
-    usuario = session['usuario']
-    msg = None
-
-    if request.method == 'POST':
-        identificador = request.form.get('identificador', '').strip()
-        quantidade = int(request.form.get('quantidade', 0))
-        try:
-            conn = conectar_banco()
-            cur = conn.cursor()
-            if identificador.isdigit():
-                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s OR codigo_barra = %s", (quantidade, int(identificador), identificador))
-            else:
-                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barra = %s", (quantidade, identificador))
-            conn.commit()
-            cur.close()
-            conn.close()
-            msg = "Estoque atualizado e sincronizado com sucesso!"
-        except Exception as e:
-            msg = f"Erro ao atualizar estoque: {e}"
-
-    return render_template_string(HTML_ESTOQUE, usuario=usuario, msg=msg)
-
-@app.route('/fechamento')
-def fechamento():
-    if 'usuario' not in session:
-        return redirect(url_for('login'))
-    
-    # Parâmetros de Filtro
-    data_filtro = request.args.get('data', '').strip()
-    if not data_filtro:
-        data_filtro = datetime.now().strftime('%Y-%m-%d')
-        
-    operador_filtro = request.args.get('operador', 'todos').strip()
-    
-    vendas = []
-    total_geral = 0.0
-    total_quantidade = 0
-    lista_operadores = []
-    
-    dias_semana = {
-        'Monday': 'Segunda-feira', 'Tuesday': 'Terça-feira', 'Wednesday': 'Quarta-feira',
-        'Thursday': 'Quinta-feira', 'Friday': 'Sexta-feira', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
-    }
-    meses = {
-        1: 'janeiro', 2: 'fevereiro', 3: 'março', 4: 'abril', 5: 'maio', 6: 'junho',
-        7: 'julho', 8: 'agosto', 9: 'setembro', 10: 'outubro', 11: 'novembro', 12: 'dezembro'
-    }
-
-    try:
-        dt_obj = datetime.strptime(data_filtro, '%Y-%m-%d')
-        dia_sem = dias_semana.get(dt_obj.strftime('%A'), '')
-        mes_nome = meses.get(dt_obj.month, '')
-        data_extenso = f"{dia_sem}, {dt_obj.day} de {mes_nome} de {dt_obj.year}"
-    except:
-        data_extenso = data_filtro
-
-    try:
-        conn = conectar_banco()
-        cur = conn.cursor()
-        
-        # Buscar lista de todos os operadores cadastrados para preencher o select
-        cur.execute(f"SELECT DISTINCT login FROM {TABELA_USUARIO} ORDER BY login")
-        ops = cur.fetchall()
-        lista_operadores = [op[0] for op in ops]
-
-        # Monta a query dinamicamente baseada no filtro de operador
-        if operador_filtro == 'todos':
-            query = f"""
-                SELECT data_venda, operador, produto, quantidade, forma_pagamento, total 
-                FROM {TABELA_VENDAS} 
-                WHERE DATE(data_venda) = %s 
-                ORDER BY data_venda DESC
-            """
-            cur.execute(query, (data_filtro,))
-        else:
-            query = f"""
-                SELECT data_venda, operador, produto, quantidade, forma_pagamento, total 
-                FROM {TABELA_VENDAS} 
-                WHERE operador = %s AND DATE(data_venda) = %s 
-                ORDER BY data_venda DESC
-            """
-            cur.execute(query, (operador_filtro, data_filtro))
-            
-        rows = cur.fetchall()
-        cur.close()
-        conn.close()
-
-        for row in rows:
-            data_str = row[0].strftime('%d/%m/%Y %H:%M:%S') if row[0] else ''
-            val = float(row[5])
-            qtd = int(row[3])
-            vendas.append({
-                'data_venda_str': data_str,
-                'operador': row[1],
-                'produto': row[2],
-                'quantidade': qtd,
-                'forma_pagamento': row[4],
-                'total': val
-            })
-            total_geral += val
-            total_quantidade += qtd
-    except Exception as e:
-        print(f"Erro ao carregar fechamento do banco: {e}")
-
-    ticket_medio = (total_geral / len(vendas)) if len(vendas) > 0 else 0.0
-
-    return render_template_string(
-        HTML_FECHAMENTO, 
-        usuario=session['usuario'],
-        vendas=vendas,
-        total_geral=total_geral,
-        total_quantidade=total_quantidade,
-        ticket_medio=ticket_medio,
-        data_selecionada=data_filtro,
-        data_extenso=data_extenso,
-        lista_operadores=lista_operadores,
-        operador_selecionado=operador_filtro
-    )
-
-if __name__ == '__main__':
-    port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port, debug=True)
-       
-
-    total_compra_atual = sum(item['total'] for item in session['carrinho_atual'])
-    
-    return render_template_string(
-        HTML_CAIXA, 
-        usuario=usuario, 
-        carrinho_atual=session['carrinho_atual'], 
-        total_compra_atual=total_compra_atual,
-        msg=msg
-    )
 
 @app.route('/buscar_produto')
 def buscar_produto():
@@ -1706,3 +1545,4 @@ def fechamento():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
