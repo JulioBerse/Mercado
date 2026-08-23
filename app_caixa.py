@@ -829,29 +829,6 @@ def estoque_entrada():
 
     return render_template_string(HTML_ESTOQUE, usuario=usuario, msg=msg)
 
-@app.route('/realizar_fechamento', methods=['POST'])
-def realizar_fechamento():
-    if 'usuario' not in session:
-        return redirect(url_for('login'))
-    
-    usuario = session['usuario']
-    data_alvo = request.form.get('data_fechamento')
-    operador_alvo = request.form.get('operador_fechamento')
-    
-    try:
-        conn = conectar_banco()
-        cur = conn.cursor()
-        
-        # Grava o evento de fechamento de caixa oficial no PRODUTOBKP de forma segura
-        registrar_backup(cur, 0, f"FECHAMENTO_CAIXA - Data: {data_alvo} - Op: {operador_alvo}", 0.0, 0, "FECHAMENTO_TURNO", usuario)
-        
-        conn.commit()
-        cur.close()
-        conn.close()
-        
-        return redirect(url_for('fechamento'))
-    except Exception as e:
-        return f"Erro ao realizar fechamento: {e}"
 
 @app.route('/realizar_fechamento', methods=['POST'])
 def realizar_fechamento():
