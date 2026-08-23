@@ -10,7 +10,11 @@ TABELA_PRODUTO = "produto"
 TABELA_USUARIO = "usuario"
 
 def conectar_banco():
+    # Pega a URL do ambiente (Neon ou Render)
     db_url = os.environ.get('DATABASE_URL')
+    if not db_url:
+        raise ValueError("A variável de ambiente DATABASE_URL não está configurada!")
+    # O Neon usa SSL por padrão, o psycopg2 lida bem com a URL completa do Neon
     return psycopg2.connect(db_url)
 
 # ==========================================
@@ -104,7 +108,6 @@ HTML_CAIXA = """
         .brand-header h2 { color: #007bff; margin: 0; font-size: 18px; font-weight: bold; }
         .user-info { font-size: 12px; color: #555; text-align: right; }
         .user-info a { color: #dc3545; text-decoration: none; margin-left: 6px; font-weight: bold; }
-        .footer-system { text-align: center; margin-top: 20px; font-size: 11px; color: #888; border-top: 1px solid #e9ecef; padding-top: 10px; }
         .pix-card { background: #ffffff; width: 100%; max-width: 550px; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); display: none; text-align: center; }
     </style>
 </head>
@@ -147,13 +150,11 @@ HTML_CAIXA = """
                 </table>
             </div>
 
-            <!-- Totalizador da Compra Atual -->
             <div style="margin-top: 12px; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 10px; border-radius: 6px; text-align: center;">
                 <span style="font-size: 12px; color: #2e7d32; font-weight: bold;">TOTAL DA COMPRA:</span><br>
                 <span style="font-size: 18px; color: #2e7d32; font-weight: bold;">R$ {{ "%.2f"|format(total_compra_atual) }}</span>
             </div>
 
-            <!-- Botão para cancelar/limpar a compra atual -->
             {% if carrinho_atual %}
             <form method="POST">
                 <input type="hidden" name="acao" value="cancelar">
@@ -162,12 +163,11 @@ HTML_CAIXA = """
             {% endif %}
 
             <div style="margin-top: 15px; font-size: 12px; color: #666; text-align: center;">
-                Total Geral do Caixa Hoje: <strong>R$ {{ "%.2f"|format(total_geral_dia) }}</strong><br>
                 Operador: <strong>{{ usuario }}</strong>
             </div>
        </div>
 
-       <!-- CARD PRINCIPAL DE ENTRADA DE ITENS E FECHAMENTO -->
+       <!-- CARD PRINCIPAL DE ENTRADA DE ITENS -->
        <div class="card" id="cardPrincipal">
             <div style="text-align: center; margin-bottom: 10px;">
                 <div style="display: inline-block; width: 32px; height: 32px; background-color: #bc002d; border-radius: 50%; line-height: 32px; color: white; font-weight: bold; font-size: 15px; margin-bottom: 2px;">山</div>
@@ -186,7 +186,6 @@ HTML_CAIXA = """
                 <a class="nav-link" href="/fechamento" style="color: #bc002d; margin-left: 10px;">📊 Fechamento</a>
             </div>
 
-            <!-- FORMULÁRIO 1: Adicionar item ao carrinho -->
             <form id="formVenda" method="POST">
                 <input type="hidden" name="acao" value="adicionar">
                 
@@ -217,7 +216,6 @@ HTML_CAIXA = """
                 <button type="submit" id="btnAdicionar">Adicionar Item (ENTER)</button>
             </form>
 
-            <!-- FORMULÁRIO 2: Finalizar a Compra inteira -->
             {% if carrinho_atual %}
             <form method="POST" style="margin-top: 15px; border-top: 2px dashed #007bff; padding-top: 15px;">
                 <input type="hidden" name="acao" value="finalizar">
@@ -235,7 +233,7 @@ HTML_CAIXA = """
             {% endif %}
        </div>
 
-       <!-- CARD PIX COM O SEU QR CODE -->
+       <!-- CARD PIX -->
        <div class="pix-card" id="cardPix">
             <h2 style="color: #007bff; margin-top: 0;">📱 Pagamento via Pix</h2>
             <p>Escaneie o QR Code abaixo com o aplicativo do seu banco:</p>
@@ -259,7 +257,7 @@ HTML_CAIXA = """
    </div>
 
    {% if msg %}
-        <div style="position: fixed; bottom: 10px; right: 10px; z-index: 999;" class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() or 'adicionado' in msg.lower() else 'msg-erro' }}">
+        <div style="position: fixed; bottom: 10px; right: 10px; z-index: 999; background: #ffebee; color: #c62828; padding: 10px; border-radius: 6px; font-weight: bold;">
             {{ msg }}
         </div>
    {% endif %}
@@ -354,7 +352,6 @@ HTML_ESTOQUE = """
    <style>
         body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; }
         .card { background: #ffffff; width: 100%; max-width: 600px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
-        h1 { color: #1a1a1a; margin-top: 0; font-size: 24px; border-bottom: 2px solid #28a745; padding-bottom: 10px; }
         label { display: block; margin-top: 15px; font-weight: 600; color: #444; }
         input { width: 100%; padding: 12px; margin-top: 6px; border: 1px solid #ccc; border-radius: 6px; box-sizing: border-box; font-size: 15px; background-color: #fff; }
         input:focus { border-color: #28a745; outline: none; }
@@ -362,31 +359,17 @@ HTML_ESTOQUE = """
         button:hover { background-color: #218838; }
         .info-box { background-color: #f8f9fa; border: 1px solid #e9ecef; border-radius: 6px; padding: 15px; margin-top: 15px; }
         .info-row { display: flex; justify-content: space-between; margin-bottom: 8px; font-size: 16px; }
-        .info-row strong { color: #333; }
-        .msg { margin-top: 20px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; }
-        .msg-sucesso { background: #e8f5e9; color: #2e7d32; }
-        .msg-erro { background: #ffebee; color: #c62828; }
         .nav-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-weight: bold; }
         .brand-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; border-bottom: 1px solid #e9ecef; padding-bottom: 10px; }
         .brand-header h2 { color: #007bff; margin: 0; font-size: 20px; font-weight: bold; }
-        .user-info { font-size: 13px; color: #555; text-align: right; }
-        .user-info a { color: #dc3545; text-decoration: none; margin-left: 8px; font-weight: bold; }
-        .footer-system { text-align: center; margin-top: 30px; font-size: 12px; color: #888; border-top: 1px solid #e9ecef; padding-top: 15px; }
    </style>
 </head>
 <body>
  <div class="card">
-        <div style="text-align: center; margin-bottom: 15px;">
-            <div style="display: inline-block; width: 40px; height: 40px; background-color: #bc002d; border-radius: 50%; line-height: 40px; color: white; font-weight: bold; font-size: 18px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); margin-bottom: 4px;">山</div>
-            <h2 style="color: #1a1a1a; font-size: 18px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
-            <span style="color: #666; font-size: 10px; letter-spacing: 3px; text-transform: uppercase;">山崎グループ</span>
-        </div>
-        <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 15px;">
-
         <div class="brand-header">
             <h2>📦 Gerenciamento de Estoque</h2>
-            <div class="user-info">
-                Operador: <strong>{{ usuario }}</strong> <a href="/logout">[Sair]</a>
+            <div style="font-size: 13px; color: #555;">
+                Operador: <strong>{{ usuario }}</strong> <a href="/logout" style="color: #dc3545; text-decoration: none; font-weight: bold;">[Sair]</a>
             </div>
         </div>
         <a class="nav-link" href="/">← Voltar para o Caixa</a>
@@ -413,12 +396,8 @@ HTML_ESTOQUE = """
         </form>
 
         {% if msg %}
-            <div class="msg {{ 'msg-sucesso' if 'sucesso' in msg.lower() else 'msg-erro' }}">{{ msg }}</div>
+            <div style="margin-top: 20px; padding: 12px; border-radius: 6px; font-weight: bold; text-align: center; background: #e8f5e9; color: #2e7d32;">{{ msg }}</div>
         {% endif %}
-
-        <div class="footer-system">
-            Powered by <strong>Yamasaki Technology Solution</strong> 🚀
-        </div>
    </div>
 
    <script>
@@ -460,6 +439,48 @@ HTML_ESTOQUE = """
 </html>
 """
 
+HTML_FECHAMENTO = """
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Fechamento de Caixa - Grupo Yamasaki</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; padding: 30px; }
+        .card { background: #ffffff; max-width: 800px; margin: auto; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); }
+        h1 { color: #bc002d; margin-top: 0; font-size: 22px; border-bottom: 2px solid #bc002d; padding-bottom: 10px; }
+        .nav-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-weight: bold; }
+        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
+        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 14px; }
+        th { background-color: #f8f9fa; color: #333; }
+    </style>
+</head>
+<body>
+    <div class="card">
+        <h1>📊 Painel de Fechamento de Caixa</h1>
+        <a class="nav-link" href="/">← Voltar para a Frente de Caixa</a>
+        
+        <p>Resumo operacional do dia para o operador: <strong>{{ usuario }}</strong></p>
+        
+        <table>
+            <thead>
+                <tr>
+                    <th>Data/Hora</th>
+                    <th>Forma de Pagamento</th>
+                    <th>Valor Total</th>
+                </tr>
+            </thead>
+            <tbody>
+                <tr>
+                    <td colspan="3" style="text-align: center; color: #666;">Nenhum registro de fechamento hoje.</td>
+                </tr>
+            </tbody>
+        </table>
+    </div>
+</body>
+</html>
+"""
+
 # ==========================================
 # 2. ROTAS DO FLASK
 # ==========================================
@@ -483,7 +504,7 @@ def login():
             else:
                 msg = "Usuário ou senha incorretos."
         except Exception as e:
-            msg = f"Erro ao conectar ao banco: {e}"
+            msg = f"Erro no banco: {e}"
     return render_template_string(HTML_LOGIN, msg=msg)
 
 @app.route('/logout')
@@ -506,12 +527,18 @@ def caixa():
         acao = request.form.get('acao')
         
         if acao == 'adicionar':
-            identificador = request.form.get('identificador')
+            identificador = request.form.get('identificador', '').strip()
             quantidade = int(request.form.get('quantidade', 1))
             try:
                 conn = conectar_banco()
                 cur = conn.cursor()
-                cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE CAST(id AS TEXT) = %s OR codigo_barras = %s", (identificador, identificador))
+                
+                # Tratamento robusto para buscar por ID numérico ou Código de Barras string
+                if identificador.isdigit():
+                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barras = %s", (int(identificador), identificador))
+                else:
+                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barras = %s", (identificador,))
+                
                 produto = cur.fetchone()
                 cur.close()
                 conn.close()
@@ -527,26 +554,22 @@ def caixa():
                         'total': total_item
                     })
                     session.modified = True
-                    msg = f"Item {nome} adicionado com sucesso!"
                 else:
                     msg = "Produto não encontrado."
             except Exception as e:
-                msg = f"Erro ao adicionar item: {e}"
+                msg = f"Erro ao adicionar: {e}"
 
         elif acao == 'remover':
             indice = int(request.form.get('indice'))
             if 0 <= indice < len(session['carrinho_atual']):
-                removido = session['carrinho_atual'].pop(indice)
+                session['carrinho_atual'].pop(indice)
                 session.modified = True
-                msg = f"Item {removido['nome']} removido."
 
         elif acao == 'cancelar':
             session['carrinho_atual'] = []
             session.modified = True
-            msg = "Compra cancelada."
 
         elif acao == 'finalizar':
-            # Lógica de fechamento de venda pode ser inserida aqui
             session['carrinho_atual'] = []
             session.modified = True
             msg = "Venda finalizada com sucesso!"
@@ -558,23 +581,27 @@ def caixa():
         usuario=usuario, 
         carrinho_atual=session['carrinho_atual'], 
         total_compra_atual=total_compra_atual,
-        total_geral_dia=0.00,
         msg=msg
     )
 
 @app.route('/buscar_produto')
 def buscar_produto():
-    q = request.args.get('q', '')
+    q = request.args.get('q', '').strip()
     try:
         conn = conectar_banco()
         cur = conn.cursor()
-        cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE CAST(id AS TEXT) = %s OR codigo_barras = %s", (q, q))
+        
+        if q.isdigit():
+            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barras = %s", (int(q), q))
+        else:
+            cur.execute(f"SELECT nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barras = %s", (q,))
+            
         produto = cur.fetchone()
         cur.close()
         conn.close()
 
         if produto:
-            return jsonify({'sucesso': True, 'nome': produto[0], 'preco': produto[1], 'estoque': produto[2]})
+            return jsonify({'sucesso': True, 'nome': produto[0], 'preco': float(produto[1]), 'estoque': produto[2]})
         else:
             return jsonify({'sucesso': False})
     except Exception as e:
@@ -589,12 +616,15 @@ def estoque_entrada():
     msg = None
 
     if request.method == 'POST':
-        identificador = request.form.get('identificador')
+        identificador = request.form.get('identificador', '').strip()
         quantidade = int(request.form.get('quantidade', 0))
         try:
             conn = conectar_banco()
             cur = conn.cursor()
-            cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE CAST(id AS TEXT) = %s OR codigo_barras = %s", (quantidade, identificador, identificador))
+            if identificador.isdigit():
+                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE id = %s OR codigo_barras = %s", (quantidade, int(identificador), identificador))
+            else:
+                cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque + %s WHERE codigo_barras = %s", (quantidade, identificador))
             conn.commit()
             cur.close()
             conn.close()
@@ -604,6 +634,12 @@ def estoque_entrada():
 
     return render_template_string(HTML_ESTOQUE, usuario=usuario, msg=msg)
 
+@app.route('/fechamento')
+def fechamento():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+    return render_template_string(HTML_FECHAMENTO, usuario=session['usuario'])
+
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
-    app.run(host='0.0.0.0', port=port)
+    app.run(host='0.0.0.0', port=port, debug=True)
