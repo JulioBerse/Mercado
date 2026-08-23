@@ -323,18 +323,29 @@ HTML_CAIXA = """
             document.getElementById('cardPrincipal').style.display = 'block';
         }
    </script>
-   <script>
+  <script>
     window.addEventListener('DOMContentLoaded', (event) => {
-        const opcoes = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-        const hoje = new Date();
-        let dataFormatada = hoje.toLocaleDateString('pt-BR', opcoes);
-        // Deixa a primeira letra maiúscula (Ex: Sábado, 22 de agosto de 2026)
-        dataFormatada = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
-        
-        const elementoData = document.getElementById('data-extenso');
-        if (elementoData) {
-            elementoData.innerHTML = `📅 <strong>${dataFormatada}</strong>`;
+        function atualizarDataEHora() {
+            const hoje = new Date();
+            
+            // Formata a data por extenso
+            const opcoesData = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let dataFormatada = hoje.toLocaleDateString('pt-BR', opcoesData);
+            dataFormatada = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
+            
+            // Formata o horário (HH:MM:SS)
+            const horaFormatada = hoje.toLocaleTimeString('pt-BR');
+            
+            // Junta data e hora no elemento
+            const elementoData = document.getElementById('data-extenso');
+            if (elementoData) {
+                elementoData.innerHTML = `📅 <strong>${dataFormatada}</strong> — ⏰ <strong>${horaFormatada}</strong>`;
+            }
         }
+        
+        // Atualiza na hora que abre e depois fica atualizando a cada 1 segundo
+        atualizarDataEHora();
+        setInterval(atualizarDataEHora, 1000);
     });
 </script>
 </body>
