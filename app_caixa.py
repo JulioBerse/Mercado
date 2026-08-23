@@ -176,11 +176,14 @@ HTML_CAIXA = """
             </div>
             <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 12px;">
 
-            <div class="brand-header">
+         <div class="brand-header">
                 <h2>🏪 Frente de Caixa</h2>
                 <div class="user-info">
                     <a href="/logout">[Sair]</a>
                 </div>
+            </div>
+            <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
+            <a class="nav-link" href="/fechamento" style="color: #bc002d; margin-left: 10px;">📊 Fechamento</a>
             </div>
             <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
             <a class="nav-link" href="/fechamento" style="color: #bc002d; margin-left: 10px;">📊 Fechamento</a>
