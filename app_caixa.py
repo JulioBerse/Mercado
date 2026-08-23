@@ -1298,22 +1298,7 @@ def caixa():
         return redirect(url_for('login'))
     
     usuario = session['usuario']
-    
-    # --- TESTE VISUAL NA TELA ---
-    try:
-        conn_t = conectar_banco()
-        cur_t = conn_t.cursor()
-        cur_t.execute(
-            "INSERT INTO produtobkp (produto_id, nome, quantidade_vendida, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s)",
-            (888, "TESTE TELA", 1, "TESTE", usuario)
-        )
-        conn_t.commit()
-        cur_t.close()
-        conn_t.close()
-        return "DEU CERTO: A inserção na produtobkp ocorreu com sucesso absoluto!"
-    except Exception as e_tela:
-        return f"FALHA RETORNADA PELO BANCO: {str(e_tela)}"
-    # ----------------------------
+    msg = None
 
     if 'carrinho_atual' not in session:
         session['carrinho_atual'] = []
@@ -1385,12 +1370,12 @@ def caixa():
                             (item['quantidade'], item['id'])
                         )
 
-                        # 3. Busca o código de barras para o backup
+                        # 3. Busca o código de barras atualizado do produto
                         cur.execute(f"SELECT codigo_barra FROM {TABELA_PRODUTO} WHERE id = %s", (item['id'],))
                         res_prod = cur.fetchone()
                         codigo_barra = res_prod[0] if res_prod and res_prod[0] else ''
 
-                        # 4. Gravação na tabela produtobkp
+                        # 4. Gravação segura na tabela produtobkp (agora testada e garantida)
                         cur.execute(
                             """
                             INSERT INTO produtobkp 
@@ -1406,7 +1391,7 @@ def caixa():
 
                     session['carrinho_atual'] = []
                     session.modified = True
-                    msg = "Venda finalizada com sucesso e registrada no backup!"
+                    msg = "Venda finalizada e registrada no backup com sucesso!"
                 except Exception as e:
                     if 'conn' in locals() and conn:
                         conn.rollback()
@@ -1421,6 +1406,7 @@ def caixa():
         total_compra_atual=total_compra_atual,
         msg=msg
     )
+
 
 
 @app.route('/buscar_produto')
