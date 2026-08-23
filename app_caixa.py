@@ -1286,8 +1286,10 @@ def login():
 def logout():
     session.pop('usuario', None)
     return redirect(url_for('login'))
+
+
 # ==========================================
-# ROTA DO CAIXA COM GRAVAÇÃO GARANTIDA NA TABELA 'produtobkp'
+# ROTA DO CAIXA COMPLETA
 # ==========================================
 
 @app.route('/', methods=['GET', 'POST'])
@@ -1345,6 +1347,7 @@ def caixa():
         elif acao == 'cancelar':
             session['carrinho_atual'] = []
             session.modified = True
+
         elif acao == 'finalizar':
             carrinho = session.get('carrinho_atual', [])
             if carrinho:
@@ -1367,7 +1370,7 @@ def caixa():
                             (item['quantidade'], item['id'])
                         )
 
-                        # 3. Busca o código de barras
+                        # 3. Busca o código de barras para o backup
                         cur.execute(f"SELECT codigo_barra FROM {TABELA_PRODUTO} WHERE id = %s", (item['id'],))
                         res_prod = cur.fetchone()
                         codigo_barra = res_prod[0] if res_prod and res_prod[0] else ''
@@ -1388,12 +1391,11 @@ def caixa():
 
                     session['carrinho_atual'] = []
                     session.modified = True
-                    msg = "Venda finalizada com sucesso!"
+                    msg = "Venda finalizada com sucesso e registrada no backup!"
                 except Exception as e:
-                    # ISSO VAI MOSTRAR O ERRO REAL NA TELA DO SEU SISTEMA:
-                    conn.rollback() # Desfaz alterações caso dê erro em algum item
-                    msg = f"ERRO DETALHADO DO BANCO: {str(e)}"
-       
+                    if 'conn' in locals() and conn:
+                        conn.rollback()
+                    msg = f"Erro ao finalizar venda: {e}"
 
     total_compra_atual = sum(item['total'] for item in session['carrinho_atual'])
     
@@ -1404,6 +1406,7 @@ def caixa():
         total_compra_atual=total_compra_atual,
         msg=msg
     )
+
 
 @app.route('/buscar_produto')
 def buscar_produto():
