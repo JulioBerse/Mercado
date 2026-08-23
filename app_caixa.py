@@ -1299,12 +1299,6 @@ def caixa():
     
     usuario = session['usuario']
 
-    @app.route('/', methods=['GET', 'POST'])
-def caixa():
-    if 'usuario' not in session:
-        return redirect(url_for('login'))
-    
-    usuario = session['usuario']
     
     # --- TESTE VISUAL NA TELA ---
     try:
