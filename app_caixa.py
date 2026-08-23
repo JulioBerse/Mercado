@@ -1257,7 +1257,7 @@ HTML_FECHAMENTO = """
 """
 
 # ==========================================
-# ROTA PRINCIPAL DO CAIXA (INCLUINDO A FINALIZAÇÃO)
+# ROTA COMPLETA DO CAIXA (COM O CÁLCULO E OS DADOS CERTOS)
 # ==========================================
 @app.route('/', methods=['GET', 'POST'])
 def caixa():
@@ -1368,9 +1368,16 @@ def caixa():
                         conn.rollback()
                     msg = f"Erro ao finalizar venda: {e}"
 
-    return render_template_string(HTML_CAIXA, usuario=usuario, carrinho=session.get('carrinho_atual', []), msg=msg)
+    # Calcula o total geral da compra atual para passar ao HTML (evita o erro 500)
+    total_compra_atual = sum(item['total'] for item in session.get('carrinho_atual', []))
 
-
+    return render_template_string(
+        HTML_CAIXA, 
+        usuario=usuario, 
+        carrinho=session.get('carrinho_atual', []), 
+        total_compra_atual=total_compra_atual, 
+        msg=msg
+    )
 # ==========================================
 # DEMAIS ROTAS (LOGIN, LOGOUT, BUSCAR, ESTOQUE, FECHAMENTO)
 # ==========================================
