@@ -467,10 +467,10 @@ HTML_FECHAMENTO = """
         .dash-card.highlight .value { color: #28a745; }
 
         /* Filter Form */
-        .filter-form { background: #fdfdfd; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; }
-        .filter-group { flex: 1; }
+        .filter-form { background: #fdfdfd; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; flex-wrap: wrap; }
+        .filter-group { flex: 1; min-width: 200px; }
         .filter-group label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 5px; }
-        .filter-group input { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .filter-group input, .filter-group select { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; background: #fff; }
         .btn-filter { background-color: #007bff; color: white; border: none; padding: 9px 20px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; height: 38px; }
         .btn-filter:hover { background-color: #0056b3; }
 
@@ -499,18 +499,29 @@ HTML_FECHAMENTO = """
             <a class="nav-link" href="/">← Voltar para Frente de Caixa</a>
         </div>
 
-        <!-- Filtro por Data -->
+        <!-- Filtro por Data e Operador -->
         <form method="GET" class="filter-form">
             <div class="filter-group">
                 <label for="data_filtro">Filtrar por Data:</label>
                 <input type="date" id="data_filtro" name="data" value="{{ data_selecionada }}">
             </div>
+
+            <div class="filter-group">
+                <label for="operador_filtro">Operador:</label>
+                <select id="operador_filtro" name="operador">
+                    <option value="todos">🌐 Todos os Operadores</option>
+                    {% for op in lista_operadores %}
+                        <option value="{{ op }}" {% if operador_selecionado == op %}selected{% endif %}>{{ op }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
             <button type="submit" class="btn-filter">🔍 Pesquisar</button>
             <a href="/fechamento" style="padding: 9px 15px; background: #6c757d; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: bold; height: 38px; display: flex; align-items: center; box-sizing: border-box;">Hoje</a>
         </form>
 
         <p style="font-size: 14px; color: #555; margin-top: 0; margin-bottom: 15px;">
-            Exibindo dados para o operador: <strong>{{ usuario }}</strong> | Período: <strong>{{ data_extenso }}</strong>
+            Exibindo dados para: <strong>{% if operador_selecionado == 'todos' %}Todos os Operadores{% else %}{{ operador_selecionado }}{% endif %}</strong> | Período: <strong>{{ data_extenso }}</strong>
         </p>
 
         <!-- Dashboard Cards -->
@@ -562,7 +573,7 @@ HTML_FECHAMENTO = """
                     </tr>
                     {% else %}
                     <tr>
-                        <td colspan="6" style="text-align: center; color: #777; padding: 25px;">Nenhum registro de venda encontrado para esta data.</td>
+                        <td colspan="6" style="text-align: center; color: #777; padding: 25px;">Nenhum registro de venda encontrado para os filtros selecionados.</td>
                     </tr>
                     {% endfor %}
                 </tbody>
@@ -755,23 +766,24 @@ def fechamento():
     if 'usuario' not in session:
         return redirect(url_for('login'))
     
-    usuario_atual = session['usuario']
-    
-    # Recebe a data do filtro via query param (YYYY-MM-DD). Se vazio, usa a data atual do sistema.
+    # Parâmetros de Filtro
     data_filtro = request.args.get('data', '').strip()
     if not data_filtro:
         data_filtro = datetime.now().strftime('%Y-%m-%d')
+        
+    operador_filtro = request.args.get('operador', 'todos').strip()
     
     vendas = []
     total_geral = 0.0
     total_quantidade = 0
+    lista_operadores = []
     
     dias_semana = {
         'Monday': 'Segunda-feira', 'Tuesday': 'Terça-feira', 'Wednesday': 'Quarta-feira',
         'Thursday': 'Quinta-feira', 'Friday': 'Sexta-feira', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
     }
     meses = {
-        1: 'janeiro', 2: 'fevereiro', 3: 'março', 4: 'abril', 5: 'mai', 6: 'junho',
+        1: 'janeiro', 2: 'fevereiro', 3: 'março', 4: 'abril', 5: 'maio', 6: 'junho',
         7: 'julho', 8: 'agosto', 9: 'setembro', 10: 'outubro', 11: 'novembro', 12: 'dezembro'
     }
 
@@ -787,14 +799,29 @@ def fechamento():
         conn = conectar_banco()
         cur = conn.cursor()
         
-        # Filtra por operador e pela data exata selecionada no banco
-        query = f"""
-            SELECT data_venda, operador, produto, quantidade, forma_pagamento, total 
-            FROM {TABELA_VENDAS} 
-            WHERE operador = %s AND DATE(data_venda) = %s 
-            ORDER BY data_venda DESC
-        """
-        cur.execute(query, (usuario_atual, data_filtro))
+        # Buscar lista de todos os operadores cadastrados para preencher o select
+        cur.execute(f"SELECT DISTINCT login FROM {TABELA_USUARIO} ORDER BY login")
+        ops = cur.fetchall()
+        lista_operadores = [op[0] for op in ops]
+
+        # Monta a query dinamicamente baseada no filtro de operador
+        if operador_filtro == 'todos':
+            query = f"""
+                SELECT data_venda, operador, produto, quantidade, forma_pagamento, total 
+                FROM {TABELA_VENDAS} 
+                WHERE DATE(data_venda) = %s 
+                ORDER BY data_venda DESC
+            """
+            cur.execute(query, (data_filtro,))
+        else:
+            query = f"""
+                SELECT data_venda, operador, produto, quantidade, forma_pagamento, total 
+                FROM {TABELA_VENDAS} 
+                WHERE operador = %s AND DATE(data_venda) = %s 
+                ORDER BY data_venda DESC
+            """
+            cur.execute(query, (operador_filtro, data_filtro))
+            
         rows = cur.fetchall()
         cur.close()
         conn.close()
@@ -820,13 +847,15 @@ def fechamento():
 
     return render_template_string(
         HTML_FECHAMENTO, 
-        usuario=usuario_atual,
+        usuario=session['usuario'],
         vendas=vendas,
         total_geral=total_geral,
         total_quantidade=total_quantidade,
         ticket_medio=ticket_medio,
         data_selecionada=data_filtro,
-        data_extenso=data_extenso
+        data_extenso=data_extenso,
+        lista_operadores=lista_operadores,
+        operador_selecionado=operador_filtro
     )
 
 if __name__ == '__main__':
