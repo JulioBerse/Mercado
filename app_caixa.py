@@ -1345,7 +1345,6 @@ def caixa():
         elif acao == 'cancelar':
             session['carrinho_atual'] = []
             session.modified = True
-
         elif acao == 'finalizar':
             carrinho = session.get('carrinho_atual', [])
             if carrinho:
@@ -1368,7 +1367,7 @@ def caixa():
                             (item['quantidade'], item['id'])
                         )
 
-                        # 3. Busca o código de barras para o backup detalhado
+                        # 3. Busca o código de barras
                         cur.execute(f"SELECT codigo_barra FROM {TABELA_PRODUTO} WHERE id = %s", (item['id'],))
                         res_prod = cur.fetchone()
                         codigo_barra = res_prod[0] if res_prod and res_prod[0] else ''
@@ -1389,9 +1388,12 @@ def caixa():
 
                     session['carrinho_atual'] = []
                     session.modified = True
-                    msg = "Venda finalizada com sucesso e registrada na tabela produtobkp!"
+                    msg = "Venda finalizada com sucesso!"
                 except Exception as e:
-                    msg = f"Erro crítico ao gravar na produtobkp ou banco: {e}"
+                    # ISSO VAI MOSTRAR O ERRO REAL NA TELA DO SEU SISTEMA:
+                    conn.rollback() # Desfaz alterações caso dê erro em algum item
+                    msg = f"ERRO DETALHADO DO BANCO: {str(e)}"
+       
 
     total_compra_atual = sum(item['total'] for item in session['carrinho_atual'])
     
