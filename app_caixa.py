@@ -605,6 +605,26 @@ HTML_FECHAMENTO = """
 </html>
 """
 
+# ==========================================
+# 1. FUNÇÃO DE AUXÍLIO PARA O BACKUP (BLINDADA)
+# ==========================================
+def registrar_backup(cur, produto_id, nome, preco, estoque, operacao, responsavel):
+    try:
+        p_id = int(produto_id) if str(produto_id).isdigit() else 0
+        p_preco = float(preco) if preco is not None else 0.0
+        p_estoque = int(estoque) if estoque is not None else 0
+        
+        cur.execute(
+            """
+            INSERT INTO produtobkp (produto_id, nome, preco, estoque, operacao, responsavel)
+            VALUES (%s, %s, %s, %s, %s, %s)
+            """,
+            (p_id, str(nome), p_preco, p_estoque, str(operacao), str(responsavel))
+        )
+    except Exception as e:
+        print(f"Erro interno no registrar_backup: {e}")
+        raise e
+
 
 # ==========================================
 # 2. ROTAS DO FLASK
@@ -719,7 +739,7 @@ def caixa():
                         # 3. Alimenta a tabela PRODUTOBKP obrigatoriamente (Backup da Venda/Baixa)
                         if prod_atualizado:
                             registrar_backup(cur, prod_atualizado[0], prod_atualizado[1], prod_atualizado[2], prod_atualizado[3], "VENDA_BAIXA_ESTOQUE", usuario)
-                        
+                    
                     conn.commit()
                     cur.close()
                     conn.close()
@@ -817,7 +837,7 @@ def realizar_fechamento():
         conn = conectar_banco()
         cur = conn.cursor()
         
-        # Grava o evento de fechamento de caixa oficial no PRODUTOBKP
+        # Grava o evento de fechamento de caixa oficial no PRODUTOBKP de forma segura
         registrar_backup(cur, 0, f"FECHAMENTO_CAIXA - Data: {data_alvo} - Op: {operador_alvo}", 0.0, 0, "FECHAMENTO_TURNO", usuario)
         
         conn.commit()
@@ -925,3 +945,5 @@ def fechamento():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
+
+
