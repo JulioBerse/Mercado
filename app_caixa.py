@@ -1292,63 +1292,7 @@ def logout():
 # ROTA DO CAIXA COMPLETA
 # ==========================================
 
-@app.route('/', methods=['GET', 'POST'])
-def caixa():
-    if 'usuario' not in session:
-        return redirect(url_for('login'))
-    
-    usuario = session['usuario']
-    msg = None
-
-    if 'carrinho_atual' not in session:
-        session['carrinho_atual'] = []
-
-    if request.method == 'POST':
-        acao = request.form.get('acao')
-        
-        if acao == 'adicionar':
-            identificador = request.form.get('identificador', '').strip()
-            quantidade = int(request.form.get('quantidade', 1))
-            try:
-                conn = conectar_banco()
-                cur = conn.cursor()
-                
-                if identificador.isdigit():
-                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barra = %s", (int(identificador), identificador))
-                else:
-                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s", (identificador,))
-                
-                produto = cur.fetchone()
-                cur.close()
-                conn.close()
-
-                if produto:
-                    prod_id, nome, preco, estoque = produto
-                    total_item = float(preco) * quantidade
-                    session['carrinho_atual'].append({
-                        'id': prod_id,
-                        'nome': nome,
-                        'preco': float(preco),
-                        'quantidade': quantidade,
-                        'total': total_item
-                    })
-                    session.modified = True
-                else:
-                    msg = "Produto não encontrado."
-            except Exception as e:
-                msg = f"Erro ao adicionar: {e}"
-
-        elif acao == 'remover':
-            indice = int(request.form.get('indice'))
-            if 0 <= indice < len(session['carrinho_atual']):
-                session['carrinho_atual'].pop(indice)
-                session.modified = True
-
-        elif acao == 'cancelar':
-            session['carrinho_atual'] = []
-            session.modified = True
-
-       elif acao == 'finalizar':
+elif acao == 'finalizar':
             carrinho = session.get('carrinho_atual', [])
             if carrinho:
                 forma_pagamento = request.form.get('forma_pagamento', 'Dinheiro')
@@ -1397,17 +1341,6 @@ def caixa():
                     if 'conn' in locals() and conn:
                         conn.rollback()
                     msg = f"Erro ao finalizar venda: {e}"
-    total_compra_atual = sum(item['total'] for item in session['carrinho_atual'])
-    
-    return render_template_string(
-        HTML_CAIXA, 
-        usuario=usuario, 
-        carrinho_atual=session['carrinho_atual'], 
-        total_compra_atual=total_compra_atual,
-        msg=msg
-    )
-
-
 
 @app.route('/buscar_produto')
 def buscar_produto():
