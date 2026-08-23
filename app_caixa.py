@@ -495,6 +495,10 @@ HTML_FECHAMENTO = """
         .badge-dinheiro { background: #d4edda; color: #155724; }
         .badge-cartao { background: #cce5ff; color: #004085; }
         .badge-pix { background: #fff3cd; color: #856404; }
+        
+        /* Estilo para a mensagem de alerta/sucesso */
+        .alert-success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; padding: 12px 20px; border-radius: 6px; margin-bottom: 20px; font-weight: bold; text-align: center; }
+        .alert-danger { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; padding: 12px 20px; border-radius: 6px; margin-bottom: 20px; font-weight: bold; text-align: center; }
     </style>
 </head>
 <body>
@@ -509,6 +513,17 @@ HTML_FECHAMENTO = """
             <h1>📊 Painel de Fechamento de Caixa</h1>
             <a class="nav-link" href="/">← Voltar para Frente de Caixa</a>
         </div>
+
+        <!-- Bloco para exibir mensagens do Flask (Sucesso ou Erro) -->
+        {% with messages = get_flashed_messages(with_categories=true) %}
+          {% if messages %}
+            {% for category, message in messages %}
+              <div class="{{ 'alert-success' if category == 'success' else 'alert-danger' }}">
+                {{ message }}
+              </div>
+            {% endfor %}
+          {% endif %}
+        {% endwith %}
 
         <!-- Botão de Fechamento de Caixa Integrado -->
         <div style="background: #fff3cd; border: 1px solid #ffeeba; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; justify-content: space-between; align-items: center;">
