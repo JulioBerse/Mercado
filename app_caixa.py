@@ -1257,42 +1257,69 @@ HTML_FECHAMENTO = """
 """
 
 # ==========================================
-# 2. ROTAS DO FLASK (Versão Corrigida e Limpa)
+# ROTA PRINCIPAL DO CAIXA (INCLUINDO A FINALIZAÇÃO)
 # ==========================================
-
-@app.route('/login', methods=['GET', 'POST'])
-def login():
+@app.route('/', methods=['GET', 'POST'])
+def caixa():
+    if 'usuario' not in session:
+        return redirect(url_for('login'))
+    
+    usuario = session['usuario']
     msg = None
+    
+    # Inicializa o carrinho na sessão se não existir
+    if 'carrinho_atual' not in session:
+        session['carrinho_atual'] = []
+
     if request.method == 'POST':
-        username = request.form.get('username')
-        password = request.form.get('password')
-        try:
-            conn = conectar_banco()
-            cur = conn.cursor()
-            cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE login = %s AND senha = %s", (username, password))
-            user = cur.fetchone()
-            cur.close()
-            conn.close()
-            if user:
-                session['usuario'] = username
-                return redirect(url_for('caixa'))
-            else:
-                msg = "Usuário ou senha incorretos."
-        except Exception as e:
-            msg = f"Erro no banco: {e}"
-    return render_template_string(HTML_LOGIN, msg=msg)
+        acao = request.form.get('acao')
+        
+        if acao == 'adicionar':
+            identificador = request.form.get('identificador', '').strip()
+            quantidade = int(request.form.get('quantidade', 1))
+            
+            try:
+                conn = conectar_banco()
+                cur = conn.cursor()
+                if identificador.isdigit():
+                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barra = %s", (int(identificador), identificador))
+                else:
+                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s", (identificador,))
+                
+                prod = cur.fetchone()
+                cur.close()
+                conn.close()
+                
+                if prod:
+                    prod_id, nome, preco, estoque = prod[0], prod[1], float(prod[2]), prod[3]
+                    total_item = preco * quantidade
+                    
+                    carrinho = session['carrinho_atual']
+                    # Verifica se o produto já está no carrinho
+                    encontrado = False
+                    for item in carrinho:
+                        if item['id'] == prod_id:
+                            item['quantidade'] += quantidade
+                            item['total'] = item['quantidade'] * item['preco']
+                            encontrado = True
+                            break
+                    
+                    if not encontrado:
+                        carrinho.append({
+                            'id': prod_id,
+                            'nome': nome,
+                            'preco': preco,
+                            'quantidade': quantidade,
+                            'total': total_item
+                        })
+                    
+                    session.modified = True
+                else:
+                    msg = "Produto não encontrado!"
+            except Exception as e:
+                msg = f"Erro ao adicionar produto: {e}"
 
-@app.route('/logout')
-def logout():
-    session.pop('usuario', None)
-    return redirect(url_for('login'))
-
-
-# ==========================================
-# ROTA DO CAIXA COMPLETA
-# ==========================================
-
-elif acao == 'finalizar':
+        elif acao == 'finalizar':
             carrinho = session.get('carrinho_atual', [])
             if carrinho:
                 forma_pagamento = request.form.get('forma_pagamento', 'Dinheiro')
@@ -1329,7 +1356,6 @@ elif acao == 'finalizar':
                             (item['id'], codigo_barra, item['nome'], item['preco'], item['quantidade'], 'VENDA', usuario)
                         )
                         
-                    # O commit e o fechamento ficam FORA do loop para salvar todos os itens de uma vez
                     conn.commit()
                     cur.close()
                     conn.close()
@@ -1341,6 +1367,40 @@ elif acao == 'finalizar':
                     if 'conn' in locals() and conn:
                         conn.rollback()
                     msg = f"Erro ao finalizar venda: {e}"
+
+    return render_template_string(HTML_CAIXA, usuario=usuario, carrinho=session.get('carrinho_atual', []), msg=msg)
+
+
+# ==========================================
+# DEMAIS ROTAS (LOGIN, LOGOUT, BUSCAR, ESTOQUE, FECHAMENTO)
+# ==========================================
+
+@app.route('/login', methods=['GET', 'POST'])
+def login():
+    msg = None
+    if request.method == 'POST':
+        username = request.form.get('username')
+        password = request.form.get('password')
+        try:
+            conn = conectar_banco()
+            cur = conn.cursor()
+            cur.execute(f"SELECT * FROM {TABELA_USUARIO} WHERE login = %s AND senha = %s", (username, password))
+            user = cur.fetchone()
+            cur.close()
+            conn.close()
+            if user:
+                session['usuario'] = username
+                return redirect(url_for('caixa'))
+            else:
+                msg = "Usuário ou senha incorretos."
+        except Exception as e:
+            msg = f"Erro no banco: {e}"
+    return render_template_string(HTML_LOGIN, msg=msg)
+
+@app.route('/logout')
+def logout():
+    session.pop('usuario', None)
+    return redirect(url_for('login'))
 
 @app.route('/buscar_produto')
 def buscar_produto():
@@ -1397,7 +1457,6 @@ def fechamento():
     if 'usuario' not in session:
         return redirect(url_for('login'))
     
-    # Parâmetros de Filtro
     data_filtro = request.args.get('data', '').strip()
     if not data_filtro:
         data_filtro = datetime.now().strftime('%Y-%m-%d')
@@ -1430,12 +1489,10 @@ def fechamento():
         conn = conectar_banco()
         cur = conn.cursor()
         
-        # Buscar lista de todos os operadores cadastrados para preencher o select
         cur.execute(f"SELECT DISTINCT login FROM {TABELA_USUARIO} ORDER BY login")
         ops = cur.fetchall()
         lista_operadores = [op[0] for op in ops]
 
-        # Monta a query dinamicamente baseada no filtro de operador
         if operador_filtro == 'todos':
             query = f"""
                 SELECT data_venda, operador, produto, quantidade, forma_pagamento, total 
@@ -1492,4 +1549,3 @@ def fechamento():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-
