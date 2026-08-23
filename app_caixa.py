@@ -229,6 +229,7 @@ HTML_CAIXA = """
                 </select>
 
                 <button type="submit" class="btn-success">✅ Finalizar Venda / Fechar Compra</button>
+                <div id="data-extenso" style="font-size: 13px; color: #555; text-align: center; margin-bottom: 10px;"></div>
             </form>
             {% endif %}
        </div>
@@ -322,6 +323,20 @@ HTML_CAIXA = """
             document.getElementById('cardPrincipal').style.display = 'block';
         }
    </script>
+   <script>
+    window.addEventListener('DOMContentLoaded', (event) => {
+        const opcoes = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+        const hoje = new Date();
+        let dataFormatada = hoje.toLocaleDateString('pt-BR', opcoes);
+        // Deixa a primeira letra maiúscula (Ex: Sábado, 22 de agosto de 2026)
+        dataFormatada = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
+        
+        const elementoData = document.getElementById('data-extenso');
+        if (elementoData) {
+            elementoData.innerHTML = `📅 <strong>${dataFormatada}</strong>`;
+        }
+    });
+</script>
 </body>
 </html>
 """
