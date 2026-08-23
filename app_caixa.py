@@ -452,60 +452,121 @@ HTML_FECHAMENTO = """
     <meta charset="UTF-8">
     <title>Fechamento de Caixa - Grupo Yamasaki</title>
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; display: flex; justify-content: center; align-items: center; padding: 30px; }
-        .card { background: #ffffff; width: 100%; max-width: 850px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.1); margin: auto; }
-        h1 { color: #bc002d; margin-top: 0; font-size: 22px; border-bottom: 2px solid #bc002d; padding-bottom: 10px; }
-        .nav-link { display: inline-block; margin-bottom: 15px; color: #007bff; text-decoration: none; font-weight: bold; }
-        table { width: 100%; border-collapse: collapse; margin-top: 15px; }
-        th, td { padding: 10px; text-align: left; border-bottom: 1px solid #ddd; font-size: 13px; }
-        th { background-color: #f8f9fa; color: #333; }
-        .total-geral { margin-top: 15px; background: #e8f5e9; border: 1px solid #c8e6c9; padding: 12px; border-radius: 6px; text-align: right; font-size: 16px; color: #2e7d32; font-weight: bold; }
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; min-height: 100vh; background-color: #f0f2f5; padding: 30px; display: flex; justify-content: center; }
+        .card { background: #ffffff; width: 100%; max-width: 950px; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); margin: auto; }
+        .header-top { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #bc002d; padding-bottom: 12px; margin-bottom: 20px; }
+        h1 { color: #bc002d; margin: 0; font-size: 22px; }
+        .nav-link { color: #007bff; text-decoration: none; font-weight: bold; font-size: 14px; }
+        .nav-link:hover { text-decoration: underline; }
+        
+        /* Dashboard Cards */
+        .dashboard-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 25px; }
+        .dash-card { background: #f8f9fa; border: 1px solid #e9ecef; border-radius: 8px; padding: 15px; text-align: center; box-shadow: 0 2px 5px rgba(0,0,0,0.02); }
+        .dash-card h4 { margin: 0; font-size: 13px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; }
+        .dash-card .value { font-size: 20px; font-weight: bold; color: #333; margin-top: 8px; }
+        .dash-card.highlight .value { color: #28a745; }
+
+        /* Filter Form */
+        .filter-form { background: #fdfdfd; border: 1px solid #e0e0e0; padding: 15px; border-radius: 8px; margin-bottom: 20px; display: flex; gap: 15px; align-items: flex-end; }
+        .filter-group { flex: 1; }
+        .filter-group label { display: block; font-size: 13px; font-weight: 600; color: #444; margin-bottom: 5px; }
+        .filter-group input { width: 100%; padding: 8px 12px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+        .btn-filter { background-color: #007bff; color: white; border: none; padding: 9px 20px; font-size: 14px; font-weight: bold; border-radius: 6px; cursor: pointer; height: 38px; }
+        .btn-filter:hover { background-color: #0056b3; }
+
+        /* Table */
+        .table-container { overflow-x: auto; border: 1px solid #eee; border-radius: 8px; max-height: 400px; }
+        table { width: 100%; border-collapse: collapse; text-align: left; font-size: 13px; }
+        th, td { padding: 12px 15px; border-bottom: 1px solid #eee; }
+        th { background-color: #f8f9fa; color: #444; position: sticky; top: 0; font-weight: 600; }
+        tr:hover { background-color: #fcfcfc; }
+        .badge { display: inline-block; padding: 4px 8px; border-radius: 4px; font-size: 11px; font-weight: bold; background: #e2e3e5; color: #383d41; }
+        .badge-dinheiro { background: #d4edda; color: #155724; }
+        .badge-cartao { background: #cce5ff; color: #004085; }
+        .badge-pix { background: #fff3cd; color: #856404; }
     </style>
 </head>
 <body>
     <div class="card">
-        <div style="text-align: center; margin-bottom: 15px;">
-            <div style="display: inline-block; width: 36px; height: 36px; background-color: #bc002d; border-radius: 50%; line-height: 36px; color: white; font-weight: bold; font-size: 16px; margin-bottom: 4px;">山</div>
-            <h2 style="color: #1a1a1a; font-size: 16px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
+        <div style="text-align: center; margin-bottom: 10px;">
+            <div style="display: inline-block; width: 32px; height: 32px; background-color: #bc002d; border-radius: 50%; line-height: 32px; color: white; font-weight: bold; font-size: 15px; margin-bottom: 2px;">山</div>
+            <h2 style="color: #1a1a1a; font-size: 15px; font-weight: 700; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
         </div>
         <hr style="border: none; height: 1px; background: #e0e0e0; margin-bottom: 15px;">
 
-        <h1>📊 Painel de Fechamento de Caixa</h1>
-        <a class="nav-link" href="/">← Voltar para a Frente de Caixa</a>
-        
-        <p>Resumo de vendas registradas no NeonDB (Operador atual: <strong>{{ usuario }}</strong>)</p>
-        
-        <table>
-            <thead>
-                <tr>
-                    <th>Data/Hora</th>
-                    <th>Operador</th>
-                    <th>Produto</th>
-                    <th>Qtd</th>
-                    <th>Pagamento</th>
-                    <th>Total</th>
-                </tr>
-            </thead>
-            <tbody>
-                {% for venda in vendas %}
-                <tr>
-                    <td>{{ venda.data_venda }}</td>
-                    <td>{{ venda.operador }}</td>
-                    <td>{{ venda.produto }}</td>
-                    <td>{{ venda.quantidade }}x</td>
-                    <td>{{ venda.forma_pagamento }}</td>
-                    <td style="color: #28a745; font-weight: bold;">R$ {{ "%.2f"|format(venda.total) }}</td>
-                </tr>
-                {% else %}
-                <tr>
-                    <td colspan="6" style="text-align: center; color: #666;">Nenhum registro de venda encontrado.</td>
-                </tr>
-                {% endfor %}
-            </tbody>
-        </table>
+        <div class="header-top">
+            <h1>📊 Painel de Fechamento de Caixa</h1>
+            <a class="nav-link" href="/">← Voltar para Frente de Caixa</a>
+        </div>
 
-        <div class="total-geral">
-            TOTAL GERAL VENDIDO: R$ {{ "%.2f"|format(total_geral) }}
+        <!-- Filtro por Data -->
+        <form method="GET" class="filter-form">
+            <div class="filter-group">
+                <label for="data_filtro">Filtrar por Data:</label>
+                <input type="date" id="data_filtro" name="data" value="{{ data_selecionada }}">
+            </div>
+            <button type="submit" class="btn-filter">🔍 Pesquisar</button>
+            <a href="/fechamento" style="padding: 9px 15px; background: #6c757d; color: white; text-decoration: none; border-radius: 6px; font-size: 14px; font-weight: bold; height: 38px; display: flex; align-items: center; box-sizing: border-box;">Hoje</a>
+        </form>
+
+        <p style="font-size: 14px; color: #555; margin-top: 0; margin-bottom: 15px;">
+            Exibindo dados para o operador: <strong>{{ usuario }}</strong> | Período: <strong>{{ data_extenso }}</strong>
+        </p>
+
+        <!-- Dashboard Cards -->
+        <div class="dashboard-grid">
+            <div class="dash-card highlight">
+                <h4>Total Vendido</h4>
+                <div class="value">R$ {{ "%.2f"|format(total_geral) }}</div>
+            </div>
+            <div class="dash-card">
+                <h4>Total de Itens Vendidos</h4>
+                <div class="value">{{ total_quantidade }}</div>
+            </div>
+            <div class="dash-card">
+                <h4>Ticket Médio por Venda</h4>
+                <div class="value">R$ {{ "%.2f"|format(ticket_medio) }}</div>
+            </div>
+        </div>
+
+        <!-- Tabela Detalhada -->
+        <div class="table-container">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Data e Hora</th>
+                        <th>Operador</th>
+                        <th>Produto</th>
+                        <th>Qtd</th>
+                        <th>Pagamento</th>
+                        <th>Total</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for venda in vendas %}
+                    <tr>
+                        <td>{{ venda.data_venda_str }}</td>
+                        <td>{{ venda.operador }}</td>
+                        <td><strong>{{ venda.produto }}</strong></td>
+                        <td>{{ venda.quantidade }}x</td>
+                        <td>
+                            {% if venda.forma_pagamento == 'Dinheiro' %}
+                                <span class="badge badge-dinheiro">Dinheiro</span>
+                            {% elif venda.forma_pagamento == 'Cartao' %}
+                                <span class="badge badge-cartao">Cartão</span>
+                            {% else %}
+                                <span class="badge badge-pix">Pix</span>
+                            {% endif %}
+                        </td>
+                        <td style="color: #28a745; font-weight: bold;">R$ {{ "%.2f"|format(venda.total) }}</td>
+                    </tr>
+                    {% else %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; color: #777; padding: 25px;">Nenhum registro de venda encontrado para esta data.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
         </div>
     </div>
 </body>
@@ -608,14 +669,12 @@ def caixa():
                     conn = conectar_banco()
                     cur = conn.cursor()
                     
-                    # Salva cada item individualmente mapeando exatamente para as colunas da tabela 'vendas'
                     for item in carrinho:
                         cur.execute(
                             f"INSERT INTO {TABELA_VENDAS} (operador, forma_pagamento, produto, quantidade, total) VALUES (%s, %s, %s, %s, %s)",
                             (usuario, forma_pagamento, item['nome'], item['quantidade'], item['total'])
                         )
                         
-                        # Dá baixa automática no estoque do produto
                         cur.execute(
                             f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s",
                             (item['quantidade'], item['id'])
@@ -696,36 +755,78 @@ def fechamento():
     if 'usuario' not in session:
         return redirect(url_for('login'))
     
+    usuario_atual = session['usuario']
+    
+    # Recebe a data do filtro via query param (YYYY-MM-DD). Se vazio, usa a data atual do sistema.
+    data_filtro = request.args.get('data', '').strip()
+    if not data_filtro:
+        data_filtro = datetime.now().strftime('%Y-%m-%d')
+    
     vendas = []
     total_geral = 0.0
+    total_quantidade = 0
+    
+    dias_semana = {
+        'Monday': 'Segunda-feira', 'Tuesday': 'Terça-feira', 'Wednesday': 'Quarta-feira',
+        'Thursday': 'Quinta-feira', 'Friday': 'Sexta-feira', 'Saturday': 'Sábado', 'Sunday': 'Domingo'
+    }
+    meses = {
+        1: 'janeiro', 2: 'fevereiro', 3: 'março', 4: 'abril', 5: 'mai', 6: 'junho',
+        7: 'julho', 8: 'agosto', 9: 'setembro', 10: 'outubro', 11: 'novembro', 12: 'dezembro'
+    }
+
+    try:
+        dt_obj = datetime.strptime(data_filtro, '%Y-%m-%d')
+        dia_sem = dias_semana.get(dt_obj.strftime('%A'), '')
+        mes_nome = meses.get(dt_obj.month, '')
+        data_extenso = f"{dia_sem}, {dt_obj.day} de {mes_nome} de {dt_obj.year}"
+    except:
+        data_extenso = data_filtro
+
     try:
         conn = conectar_banco()
         cur = conn.cursor()
-        cur.execute(f"SELECT data_venda, operador, produto, quantidade, forma_pagamento, total FROM {TABELA_VENDAS} ORDER BY data_venda DESC")
+        
+        # Filtra por operador e pela data exata selecionada no banco
+        query = f"""
+            SELECT data_venda, operador, produto, quantidade, forma_pagamento, total 
+            FROM {TABELA_VENDAS} 
+            WHERE operador = %s AND DATE(data_venda) = %s 
+            ORDER BY data_venda DESC
+        """
+        cur.execute(query, (usuario_atual, data_filtro))
         rows = cur.fetchall()
         cur.close()
         conn.close()
 
         for row in rows:
-            data_formatada = row[0].strftime('%d/%m/%Y %H:%M:%S') if row[0] else ''
+            data_str = row[0].strftime('%d/%m/%Y %H:%M:%S') if row[0] else ''
             val = float(row[5])
+            qtd = int(row[3])
             vendas.append({
-                'data_venda': data_formatada,
+                'data_venda_str': data_str,
                 'operador': row[1],
                 'produto': row[2],
-                'quantidade': row[3],
+                'quantidade': qtd,
                 'forma_pagamento': row[4],
                 'total': val
             })
             total_geral += val
+            total_quantidade += qtd
     except Exception as e:
         print(f"Erro ao carregar fechamento do banco: {e}")
 
+    ticket_medio = (total_geral / len(vendas)) if len(vendas) > 0 else 0.0
+
     return render_template_string(
         HTML_FECHAMENTO, 
-        usuario=session['usuario'],
+        usuario=usuario_atual,
         vendas=vendas,
-        total_geral=total_geral
+        total_geral=total_geral,
+        total_quantidade=total_quantidade,
+        ticket_medio=ticket_medio,
+        data_selecionada=data_filtro,
+        data_extenso=data_extenso
     )
 
 if __name__ == '__main__':
