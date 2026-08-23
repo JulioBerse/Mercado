@@ -938,7 +938,7 @@ def realizar_fechamento():
         conn = conectar_banco()
         cur = conn.cursor()
         
-        # 1. Calcula o resumo do dia para salvar no backup do fechamento
+        # 1. Calcula o resumo do dia da tabela de vendas
         if operador_alvo == 'todos':
             cur.execute(f"SELECT SUM(total), SUM(quantidade), COUNT(*) FROM {TABELA_VENDAS} WHERE DATE(data_venda) = %s", (data_alvo,))
         else:
@@ -949,16 +949,28 @@ def realizar_fechamento():
         total_qtd = int(resumo[1]) if resumo and resumo[1] else 0
         total_transacoes = int(resumo[2]) if resumo and resumo[2] else 0
         
-        detalhes_fechamento = f"FECHAMENTO OFICIAL - Data: {data_alvo} - Op: {operador_alvo} | Total: R$ {total_venda:.2f} | Itens: {total_qtd} | Vendas: {total_transacoes}"
+        detalhes = f"Operador: {operador_alvo} | Itens: {total_qtd} | Transações: {total_transacoes}"
         
-        # 2. Grava o evento de fechamento oficial no PRODUTOBKP
-        registrar_backup(cur, 0, detalhes_fechamento, total_venda, total_qtd, "FECHAMENTO_CAIXA", usuario)
+        # 2. Insere na tabela oficial 'fechamento_caixa' do NeonDB
+        cur.execute(
+            """
+            INSERT INTO fechamento_caixa (data_fechamento, total_geral, detalhes_pagamento, operador_responsavel)
+            VALUES (%s, %s, %s, %s)
+            ON CONFLICT (data_fechamento) 
+            DO UPDATE SET total_geral = EXCLUDED.total_geral, 
+                          detalhes_pagamento = EXCLUDED.detalhes_pagamento, 
+                          operador_responsavel = EXCLUDED.operador_responsavel
+            """,
+            (data_alvo, total_venda, detalhes, usuario)
+        )
         
         conn.commit()
         cur.close()
         conn.close()
         
-        return redirect(url_for('fechamento', data=data_alvo, operador=operador_alvo))
+        # Dispara mensagem de OK e limpa/atualiza a tela
+        flash("Caixa fechado e salvo com sucesso!", "success")
+        return redirect(url_for('fechamento'))
         
     except Exception as e:
         if conn:
@@ -967,7 +979,8 @@ def realizar_fechamento():
             except:
                 pass
         print(f"ERRO AO REALIZAR FECHAMENTO: {e}")
-        return f"Erro ao realizar fechamento: {e}"
+        flash(f"Erro ao realizar fechamento: {e}", "danger")
+        return redirect(url_for('fechamento'))
     finally:
         if conn:
             try:
@@ -979,5 +992,3 @@ def realizar_fechamento():
 if __name__ == '__main__':
     port = int(os.environ.get('PORT', 5000))
     app.run(host='0.0.0.0', port=port, debug=True)
-
-
