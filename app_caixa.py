@@ -1353,14 +1353,26 @@ def caixa():
                     cur = conn.cursor()
                     
                     for item in carrinho:
+                        # 1. Registra na tabela de vendas principal
                         cur.execute(
                             f"INSERT INTO {TABELA_VENDAS} (operador, forma_pagamento, produto, quantidade, total) VALUES (%s, %s, %s, %s, %s)",
                             (usuario, forma_pagamento, item['nome'], item['quantidade'], item['total'])
                         )
                         
+                        # 2. Atualiza o estoque na tabela de produtos
                         cur.execute(
                             f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s",
                             (item['quantidade'], item['id'])
+                        )
+
+                        # 3. Registra o backup detalhado na tabela produtobkp
+                        cur.execute(f"SELECT codigo_barra FROM {TABELA_PRODUTO} WHERE id = %s", (item['id'],))
+                        res_prod = cur.fetchone()
+                        codigo_barra = res_prod[0] if res_prod else ''
+
+                        cur.execute(
+                            f"INSERT INTO produtobkp (produto_id, codigo_barra, nome, preco_praticado, quantidade_vendida, tipo_operacao, operador) VALUES (%s, %s, %s, %s, %s, %s, %s)",
+                            (item['id'], codigo_barra, item['nome'], item['preco'], item['quantidade'], 'VENDA', usuario)
                         )
                         
                     conn.commit()
@@ -1369,7 +1381,7 @@ def caixa():
 
                     session['carrinho_atual'] = []
                     session.modified = True
-                    msg = "Venda finalizada e sincronizada com o NeonDB!"
+                    msg = "Venda finalizada e sincronizada com sucesso (Vendas e BKP)!"
                 except Exception as e:
                     msg = f"Erro ao sincronizar venda com o NeonDB: {e}"
 
@@ -1382,7 +1394,6 @@ def caixa():
         total_compra_atual=total_compra_atual,
         msg=msg
     )
-
 @app.route('/buscar_produto')
 def buscar_produto():
     q = request.args.get('q', '').strip()
