@@ -11,7 +11,7 @@ def buscar_produto():
     if not query:
         return jsonify({'sucesso': False, 'mensagem': 'Termo de busca vazio'})
 
-    conn = get_db_connection()
+    conn = conectar_banco()
     cur = conn.cursor()
     
     # ... Mantém todo o restante do seu código original de busca abaixo ...
