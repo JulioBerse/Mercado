@@ -24,16 +24,23 @@ def buscar_produto():
     try:
         conn = conectar_banco()
         cur = conn.cursor()
-        
-        # Consulta apontando para a tabela 'produto'
-        sql = f"""
-            SELECT id, nome, preco, estoque 
-            FROM {TABELA_PRODUTO} 
-            WHERE id::text = %s OR codigo_barras = %s OR LOWER(nome) LIKE LOWER(%s)
-            LIMIT 1
-        """
-        cur.execute(sql, (query, query, f"%{query}%"))
-        produto = cur.fetchone()
+        produto = None
+
+        # 1. Se for numérico, tenta buscar primeiro por ID
+        if query.isdigit():
+            cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s LIMIT 1", (int(query),))
+            produto = cur.fetchone()
+
+        # 2. Se não encontrou por ID, tenta por Código de Barras ou Nome
+        if not produto:
+            sql = f"""
+                SELECT id, nome, preco, estoque 
+                FROM {TABELA_PRODUTO} 
+                WHERE codigo_barras = %s OR LOWER(nome) LIKE LOWER(%s)
+                LIMIT 1
+            """
+            cur.execute(sql, (query, f"%{query}%"))
+            produto = cur.fetchone()
 
         cur.close()
         conn.close()
@@ -58,4 +65,4 @@ def buscar_produto():
 
     except Exception as e:
         print(f"Erro na busca: {e}")
-        return jsonify({'sucesso': False, 'mensagem': str(e)}), 500
+        return jsonify({'sucesso': False, 'mensagem': str(e)}), 200
