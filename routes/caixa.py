@@ -1,4 +1,3 @@
-
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from database import conectar_banco, TABELA_PRODUTO, TABELA_VENDAS, registrar_backup
 
@@ -32,18 +31,18 @@ def index():
                     sql = f"""
                         SELECT id, nome, preco, estoque 
                         FROM {TABELA_PRODUTO} 
-                        WHERE id::text = %s OR codigo_barras = %s 
+                        WHERE id = %s OR codigo_barra = %s 
                         LIMIT 1
                     """
-                    cur.execute(sql, (identificador, identificador))
+                    cur.execute(sql, (int(identificador), identificador))
                 else:
                     sql = f"""
                         SELECT id, nome, preco, estoque 
                         FROM {TABELA_PRODUTO} 
-                        WHERE LOWER(nome) LIKE LOWER(%s) 
+                        WHERE codigo_barra = %s OR LOWER(nome) LIKE LOWER(%s) 
                         LIMIT 1
                     """
-                    cur.execute(sql, (f"%{identificador}%",))
+                    cur.execute(sql, (identificador, f"%{identificador}%"))
                 
                 prod = cur.fetchone()
                 cur.close()
@@ -135,25 +134,24 @@ def buscar_produto():
         conn = conectar_banco()
         cur = conn.cursor()
         
-        sql = f"""
-            SELECT id, nome, preco, estoque 
-            FROM {TABELA_PRODUTO} 
-            WHERE id::text = %s OR codigo_barras = %s 
-            LIMIT 1
-        """
-        cur.execute(sql, (query, query))
-        produto = cur.fetchone()
-
-        if not produto:
-            sql_nome = f"""
+        if query.isdigit():
+            sql = f"""
                 SELECT id, nome, preco, estoque 
                 FROM {TABELA_PRODUTO} 
-                WHERE LOWER(nome) LIKE LOWER(%s) 
+                WHERE id = %s OR codigo_barra = %s 
                 LIMIT 1
             """
-            cur.execute(sql_nome, (f"%{query}%",))
-            produto = cur.fetchone()
-
+            cur.execute(sql, (int(query), query))
+        else:
+            sql = f"""
+                SELECT id, nome, preco, estoque 
+                FROM {TABELA_PRODUTO} 
+                WHERE codigo_barra = %s OR LOWER(nome) LIKE LOWER(%s) 
+                LIMIT 1
+            """
+            cur.execute(sql, (query, f"%{query}%"))
+            
+        produto = cur.fetchone()
         cur.close()
         conn.close()
 
@@ -171,24 +169,3 @@ def buscar_produto():
     except Exception as e:
         print(f"Erro na busca: {e}")
         return jsonify({'sucesso': False, 'mensagem': str(e)}), 200
-
-
-@caixa_bp.route('/diagnostico_db')
-def diagnostico_db():
-    try:
-        conn = conectar_banco()
-        cur = conn.cursor()
-        cur.execute("SELECT current_database(), current_user;")
-        info_conexao = cur.fetchone()
-        
-        cur.execute(f"SELECT id, nome, preco FROM {TABELA_PRODUTO};")
-        produtos = cur.fetchall()
-        cur.close()
-        conn.close()
-        
-        return jsonify({
-            'conexao_ativa': info_conexao,
-            'produtos_encontrados': produtos
-        })
-    except Exception as e:
-        return jsonify({'erro': str(e)})
