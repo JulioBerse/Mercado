@@ -9,9 +9,33 @@ def index():
     if not session.get('usuario'):
         return redirect(url_for('auth.login'))
     
-    # Se o formulario for enviado via POST (ao pressionar ENTER)
+    # Inicializa o carrinho e total na sessão caso não existam
+    if 'carrinho' not in session:
+        session['carrinho'] = []
+    if 'total_compra_atual' not in session:
+        session['total_compra_atual'] = 0.0
+
+    # Trata a submissão de formulário tradicional
     if request.method == 'POST':
-        # Mantem a pagina no caixa sem dar erro 405
+        produto_id = request.form.get('produto_id') or request.form.get('id')
+        nome = request.form.get('nome') or request.form.get('produto_nome')
+        preco = float(request.form.get('preco', 0))
+        quantidade = int(request.form.get('quantidade', 1))
+
+        if nome and preco > 0:
+            subtotal = preco * quantidade
+            carrinho = session.get('carrinho', [])
+            carrinho.append({
+                'id': produto_id,
+                'nome': nome,
+                'quantidade': quantidade,
+                'preco': preco,
+                'subtotal': subtotal
+            })
+            session['carrinho'] = carrinho
+            session['total_compra_atual'] = sum(item['subtotal'] for item in carrinho)
+            session.modified = True
+
         return redirect(url_for('caixa.index'))
 
     total_compra = session.get('total_compra_atual', 0.0)
@@ -69,3 +93,44 @@ def buscar_produto():
     except Exception as e:
         print(f"Erro na busca: {e}")
         return jsonify({'sucesso': False, 'mensagem': str(e)}), 200
+
+
+@caixa_bp.route('/adicionar_item', methods=['POST'])
+def adicionar_item():
+    dados = request.get_json() or request.form
+    nome = dados.get('nome') or dados.get('produto_nome')
+    preco = float(dados.get('preco', 0))
+    quantidade = int(dados.get('quantidade', 1))
+    produto_id = dados.get('id') or dados.get('produto_id')
+
+    if not nome or preco <= 0:
+        return jsonify({'sucesso': False, 'mensagem': 'Dados do produto inválidos'})
+
+    carrinho = session.get('carrinho', [])
+    subtotal = preco * quantidade
+
+    carrinho.append({
+        'id': produto_id,
+        'nome': nome,
+        'quantidade': quantidade,
+        'preco': preco,
+        'subtotal': subtotal
+    })
+
+    session['carrinho'] = carrinho
+    session['total_compra_atual'] = sum(item['subtotal'] for item in carrinho)
+    session.modified = True
+
+    return jsonify({
+        'sucesso': True,
+        'carrinho': session['carrinho'],
+        'total': session['total_compra_atual']
+    })
+
+
+@caixa_bp.route('/limpar_carrinho', methods=['POST'])
+def limpar_carrinho():
+    session['carrinho'] = []
+    session['total_compra_atual'] = 0.0
+    session.modified = True
+    return jsonify({'sucesso': True})
