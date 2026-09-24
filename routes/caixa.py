@@ -1,3 +1,4 @@
+
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from database import conectar_banco, TABELA_PRODUTO, TABELA_VENDAS, registrar_backup
 
@@ -27,23 +28,22 @@ def index():
                 conn = conectar_banco()
                 cur = conn.cursor()
                 
-                # Busca flexível por ID, Código de Barras ou Nome
                 if identificador.isdigit():
                     sql = f"""
-                        SELECT id, nome, preco 
+                        SELECT id, nome, preco, estoque 
                         FROM {TABELA_PRODUTO} 
-                        WHERE id = %s OR codigo_barras = %s OR codigo_barras LIKE %s OR LOWER(nome) LIKE LOWER(%s)
+                        WHERE id::text = %s OR codigo_barras = %s 
                         LIMIT 1
                     """
-                    cur.execute(sql, (int(identificador), identificador, f"%{identificador}%", f"%{identificador}%"))
+                    cur.execute(sql, (identificador, identificador))
                 else:
                     sql = f"""
-                        SELECT id, nome, preco 
+                        SELECT id, nome, preco, estoque 
                         FROM {TABELA_PRODUTO} 
-                        WHERE codigo_barras = %s OR LOWER(nome) LIKE LOWER(%s)
+                        WHERE LOWER(nome) LIKE LOWER(%s) 
                         LIMIT 1
                     """
-                    cur.execute(sql, (identificador, f"%{identificador}%"))
+                    cur.execute(sql, (f"%{identificador}%",))
                 
                 prod = cur.fetchone()
                 cur.close()
@@ -124,6 +124,7 @@ def index():
         msg=msg
     )
 
+
 @caixa_bp.route('/buscar_produto')
 def buscar_produto():
     query = request.args.get('q', '').strip()
@@ -134,7 +135,6 @@ def buscar_produto():
         conn = conectar_banco()
         cur = conn.cursor()
         
-        # Tentativa 1: Busca exata por ID ou código de barras
         sql = f"""
             SELECT id, nome, preco, estoque 
             FROM {TABELA_PRODUTO} 
@@ -144,7 +144,6 @@ def buscar_produto():
         cur.execute(sql, (query, query))
         produto = cur.fetchone()
 
-        # Tentativa 2: Se não achar, busca parcial por nome
         if not produto:
             sql_nome = f"""
                 SELECT id, nome, preco, estoque 
@@ -174,13 +173,12 @@ def buscar_produto():
         return jsonify({'sucesso': False, 'mensagem': str(e)}), 200
 
 
-
-    @caixa_bp.route('/diagnostico_db')
+@caixa_bp.route('/diagnostico_db')
 def diagnostico_db():
     try:
         conn = conectar_banco()
         cur = conn.cursor()
-        cur.execute(f"SELECT current_database(), current_user;")
+        cur.execute("SELECT current_database(), current_user;")
         info_conexao = cur.fetchone()
         
         cur.execute(f"SELECT id, nome, preco FROM {TABELA_PRODUTO};")
