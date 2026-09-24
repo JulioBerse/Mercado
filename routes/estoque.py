@@ -21,9 +21,9 @@ def entrada_estoque():
                 cur = conn.cursor()
 
                 if identificador.isdigit():
-                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barras = %s", (int(identificador), identificador))
+                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barra = %s", (int(identificador), identificador))
                 else:
-                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barras = %s", (identificador,))
+                    cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE codigo_barra = %s", (identificador,))
 
                 prod = cur.fetchone()
 
