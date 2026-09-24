@@ -1,12 +1,19 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from database import conectar_banco 
 
-
-
 # 1. Definir o Blueprint no topo do arquivo
 caixa_bp = Blueprint('caixa', __name__)
 
-# 2. Mantém a sua rota completa com toda a lógica funcional
+# --- ROTA DA PÁGINA PRINCIPAL DO CAIXA (Resolve o erro 404) ---
+@caixa_bp.route('/')
+@caixa_bp.route('/caixa')
+def index():
+    if 'usuario' not in session:
+        return redirect(url_for('auth.login'))
+    return render_template('caixa.html')
+
+
+# --- SUA ROTA DE BUSCA DE PRODUTOS ---
 @caixa_bp.route('/buscar_produto')
 def buscar_produto():
     query = request.args.get('q', '').strip()
@@ -15,10 +22,7 @@ def buscar_produto():
 
     conn = conectar_banco()
     cur = conn.cursor()
-    
-    # ... Mantém todo o restante do seu código original de busca abaixo ...
 
-    # Procura por ID (se for número) OU por Código de Barras (texto/string)
     if query.isdigit():
         sql = """
             SELECT id, nome, preco, estoque 
