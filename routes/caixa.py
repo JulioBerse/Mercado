@@ -1,11 +1,20 @@
+from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
+from database import get_db_connection
+
+# 1. Definir o Blueprint no topo do arquivo
+caixa_bp = Blueprint('caixa', __name__)
+
+# 2. Mantém a sua rota completa com toda a lógica funcional
 @caixa_bp.route('/buscar_produto')
 def buscar_produto():
     query = request.args.get('q', '').strip()
     if not query:
-        return jsonify({'sucesso': False})
+        return jsonify({'sucesso': False, 'mensagem': 'Termo de busca vazio'})
 
     conn = get_db_connection()
     cur = conn.cursor()
+    
+    # ... Mantém todo o restante do seu código original de busca abaixo ...
 
     # Procura por ID (se for número) OU por Código de Barras (texto/string)
     if query.isdigit():
