@@ -8,7 +8,7 @@ caixa_bp = Blueprint('caixa', __name__)
 @caixa_bp.route('/')
 @caixa_bp.route('/caixa')
 def index():
-    if 'usuario' not in session:
+    if not session.get('usuario'):
         return redirect(url_for('auth.login'))
     return render_template('caixa.html')
 
