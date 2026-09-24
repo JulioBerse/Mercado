@@ -10,7 +10,12 @@ caixa_bp = Blueprint('caixa', __name__)
 def index():
     if not session.get('usuario'):
         return redirect(url_for('auth.login'))
-    return render_template('caixa.html')
+    
+    # Recupera o total e o carrinho da sessão (ou define valores padrão)
+    total_compra = session.get('total_compra_atual', 0.0)
+    carrinho = session.get('carrinho', [])
+    
+    return render_template('caixa.html', total_compra_atual=total_compra, carrinho=carrinho)
 
 
 # --- SUA ROTA DE BUSCA DE PRODUTOS ---
