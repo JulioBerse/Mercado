@@ -172,3 +172,25 @@ def buscar_produto():
     except Exception as e:
         print(f"Erro na busca: {e}")
         return jsonify({'sucesso': False, 'mensagem': str(e)}), 200
+
+
+
+    @caixa_bp.route('/diagnostico_db')
+def diagnostico_db():
+    try:
+        conn = conectar_banco()
+        cur = conn.cursor()
+        cur.execute(f"SELECT current_database(), current_user;")
+        info_conexao = cur.fetchone()
+        
+        cur.execute(f"SELECT id, nome, preco FROM {TABELA_PRODUTO};")
+        produtos = cur.fetchall()
+        cur.close()
+        conn.close()
+        
+        return jsonify({
+            'conexao_ativa': info_conexao,
+            'produtos_encontrados': produtos
+        })
+    except Exception as e:
+        return jsonify({'erro': str(e)})
