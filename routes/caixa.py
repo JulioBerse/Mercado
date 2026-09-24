@@ -1,5 +1,7 @@
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
-from database import get_db_connection
+from database import conectar_banco 
+
+
 
 # 1. Definir o Blueprint no topo do arquivo
 caixa_bp = Blueprint('caixa', __name__)
