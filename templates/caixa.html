@@ -1,4 +1,4 @@
-v<!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="pt-br">
 <head>
     <meta charset="UTF-8">
@@ -6,9 +6,7 @@ v<!DOCTYPE html>
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
 
-        * {
-            box-sizing: border-box;
-        }
+        * { box-sizing: border-box; }
 
         body { 
             font-family: 'Inter', sans-serif; 
@@ -31,7 +29,6 @@ v<!DOCTYPE html>
             justify-content: center; 
         }
 
-        /* Card do Carrinho (Esquerda) */
         .cart-card { 
             background: #ffffff; 
             width: 100%; 
@@ -91,7 +88,6 @@ v<!DOCTYPE html>
             font-weight: 500;
         }
 
-        /* Card Principal (Direita) */
         .card { 
             background: #ffffff; 
             width: 100%; 
@@ -130,7 +126,6 @@ v<!DOCTYPE html>
             box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
         }
 
-        /* Botões */
         button { 
             margin-top: 16px; 
             width: 100%; 
@@ -151,27 +146,11 @@ v<!DOCTYPE html>
             transform: translateY(-1px);
         }
 
-        .btn-success { 
-            background-color: #16a34a; 
-            font-size: 1.05rem;
-        }
+        .btn-success { background-color: #16a34a; font-size: 1.05rem; }
+        .btn-success:hover { background-color: #15803d; }
+        .btn-danger { background-color: #ef4444; font-size: 0.875rem; padding: 10px; margin-top: 12px; }
+        .btn-danger:hover { background-color: #dc2626; }
 
-        .btn-success:hover { 
-            background-color: #15803d; 
-        }
-
-        .btn-danger { 
-            background-color: #ef4444; 
-            font-size: 0.875rem; 
-            padding: 10px; 
-            margin-top: 12px; 
-        }
-
-        .btn-danger:hover { 
-            background-color: #dc2626; 
-        }
-
-        /* Caixas de Informação */
         .info-box { 
             background-color: #f8fafc; 
             border: 1px solid #e2e8f0; 
@@ -188,16 +167,6 @@ v<!DOCTYPE html>
             font-size: 0.95rem; 
         }
 
-        .info-row:last-child {
-            margin-bottom: 0;
-        }
-
-        .info-row strong { 
-            color: #0f172a; 
-            font-weight: 700;
-        }
-
-        /* Destasque de Totais */
         .total-box { 
             background: #ecfdf5; 
             border: 1.5px solid #a7f3d0; 
@@ -206,16 +175,8 @@ v<!DOCTYPE html>
             margin-top: 14px; 
         }
 
-        .total-box .info-row span {
-            color: #065f46;
-            font-weight: 700;
-        }
-
-        .total-box .info-row strong {
-            color: #047857;
-            font-size: 1.25rem;
-            font-weight: 800;
-        }
+        .total-box .info-row span { color: #065f46; font-weight: 700; }
+        .total-box .info-row strong { color: #047857; font-size: 1.25rem; font-weight: 800; }
 
         .cart-total-banner {
             margin-top: 16px; 
@@ -226,7 +187,6 @@ v<!DOCTYPE html>
             text-align: center;
         }
 
-        /* Cabeçalho e Links */
         .nav-link { 
             display: inline-block; 
             margin-bottom: 10px; 
@@ -234,12 +194,6 @@ v<!DOCTYPE html>
             text-decoration: none; 
             font-weight: 700; 
             font-size: 0.85rem; 
-            transition: color 0.2s;
-        }
-
-        .nav-link:hover {
-            color: #15803d;
-            text-decoration: underline;
         }
 
         .brand-header { 
@@ -251,27 +205,10 @@ v<!DOCTYPE html>
             padding-bottom: 12px; 
         }
 
-        .brand-header h2 { 
-            color: #2563eb; 
-            margin: 0; 
-            font-size: 1.15rem; 
-            font-weight: 800; 
-        }
+        .brand-header h2 { color: #2563eb; margin: 0; font-size: 1.15rem; font-weight: 800; }
+        .user-info { font-size: 0.8rem; color: #64748b; text-align: right; }
+        .user-info a { color: #ef4444; text-decoration: none; margin-left: 6px; font-weight: 700; }
 
-        .user-info { 
-            font-size: 0.8rem; 
-            color: #64748b; 
-            text-align: right; 
-        }
-
-        .user-info a { 
-            color: #ef4444; 
-            text-decoration: none; 
-            margin-left: 6px; 
-            font-weight: 700; 
-        }
-
-        /* PIX Card */
         .pix-card { 
             background: #ffffff; 
             width: 100%; 
@@ -287,7 +224,7 @@ v<!DOCTYPE html>
 </head>
 <body>
    <div class="main-container">
-        <!-- PAINEL ESQUERDO: CARRINHO -->
+        <!-- CARRINHO -->
         <div class="cart-card">
             <h3>🛒 Itens da Compra Atual</h3>
             <div class="items-table-container">
@@ -325,7 +262,7 @@ v<!DOCTYPE html>
 
             <div class="cart-total-banner">
                 <span style="font-size: 0.75rem; color: #065f46; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;">Total da Compra</span><br>
-                <span style="font-size: 1.6rem; color: #047857; font-weight: 800;">R$ {{ "%.2f"|format(total_compra_atual) }}</span>
+                <span style="font-size: 1.6rem; color: #047857; font-weight: 800;">R$ {{ "%.2f"|format(total_compra_atual | default(0.0)) }}</span>
             </div>
 
             {% if carrinho_atual %}
@@ -340,7 +277,7 @@ v<!DOCTYPE html>
             </div>
         </div>
 
-        <!-- PAINEL DIREITO: FRENTE DE CAIXA -->
+        <!-- FRENTE DE CAIXA -->
         <div class="card" id="cardPrincipal">
             <div style="text-align: center; margin-bottom: 12px;">
                 <div style="display: inline-block; width: 34px; height: 34px; background-color: #bc002d; border-radius: 50%; line-height: 34px; color: white; font-weight: bold; font-size: 16px; margin-bottom: 4px;">山</div>
@@ -406,7 +343,7 @@ v<!DOCTYPE html>
             {% endif %}
         </div>
 
-        <!-- TELA DO PIX -->
+        <!-- PIX -->
         <div class="pix-card" id="cardPix">
             <h2 style="color: #2563eb; margin-top: 0; font-weight: 800;">📱 Pagamento via Pix</h2>
             <p style="color: #475569; font-size: 0.9rem;">Escaneie o QR Code abaixo com o aplicativo do seu banco:</p>
@@ -416,7 +353,7 @@ v<!DOCTYPE html>
             </div>
             
             <p style="font-size: 0.85rem; color: #475569;">Chave Pix: <strong style="color: #0f172a;">py9dm.mt@gmail.com</strong></p>
-            <p style="font-size: 1.1rem; color: #16a34a; font-weight: 800;">Valor: R$ {{ "%.2f"|format(total_compra_atual) }}</p>
+            <p style="font-size: 1.1rem; color: #16a34a; font-weight: 800;">Valor: R$ {{ "%.2f"|format(total_compra_atual | default(0.0)) }}</p>
             
             <form method="POST">
                 <input type="hidden" name="acao" value="finalizar">
@@ -468,12 +405,21 @@ v<!DOCTYPE html>
                 }
             }
         }
-        function tratarTeclaQuantidade(e) { if (e.key === 'Enter') { calcularTotal(); } }
+
+        function tratarTeclaQuantidade(e) { 
+            if (e.key === 'Enter') { 
+                e.preventDefault();
+                calcularTotal(); 
+                document.getElementById('formVenda').submit();
+            } 
+        }
+
         function calcularTotal() {
             const qtd = parseInt(document.getElementById('quantidade').value) || 0;
             const total = precoUnitarioAtual * qtd;
             document.getElementById('valor_total').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
         }
+
         function resetarCampos() {
             document.getElementById('valor_unitario').innerText = 'R$ 0,00';
             document.getElementById('valor_total').innerText = 'R$ 0,00';
@@ -493,23 +439,22 @@ v<!DOCTYPE html>
             document.getElementById('cardPix').style.display = 'none';
             document.getElementById('cardPrincipal').style.display = 'block';
         }
-   </script>
-   <script>
-    window.addEventListener('DOMContentLoaded', (event) => {
-        function atualizarDataEHora() {
-            const hoje = new Date();
-            const opcoesData = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
-            let dataFormatada = hoje.toLocaleDateString('pt-BR', opcoesData);
-            dataFormatada = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
-            const horaFormatada = hoje.toLocaleTimeString('pt-BR');
-            const elementoData = document.getElementById('data-extenso');
-            if (elementoData) {
-                elementoData.innerHTML = `📅 <strong>${dataFormatada}</strong> — ⏰ <strong>${horaFormatada}</strong>`;
+
+        window.addEventListener('DOMContentLoaded', (event) => {
+            function atualizarDataEHora() {
+                const hoje = new Date();
+                const opcoesData = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+                let dataFormatada = hoje.toLocaleDateString('pt-BR', opcoesData);
+                dataFormatada = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
+                const horaFormatada = hoje.toLocaleTimeString('pt-BR');
+                const elementoData = document.getElementById('data-extenso');
+                if (elementoData) {
+                    elementoData.innerHTML = `📅 <strong>${dataFormatada}</strong> — ⏰ <strong>${horaFormatada}</strong>`;
+                }
             }
-        }
-        atualizarDataEHora();
-        setInterval(atualizarDataEHora, 1000);
-    });
-</script>
+            atualizarDataEHora();
+            setInterval(atualizarDataEHora, 1000);
+        });
+   </script>
 </body>
 </html>
