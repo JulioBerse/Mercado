@@ -80,6 +80,7 @@ def index():
             session.modified = True
 
         # --- AÇÃO: FINALIZAR VENDA ---
+
         elif acao == 'finalizar':
             carrinho = session.get('carrinho', [])
             forma_pagamento = request.form.get('forma_pagamento', 'Dinheiro')
@@ -92,11 +93,13 @@ def index():
                     for item in carrinho:
                         total_item = item['preco'] * item['quantidade']
                         
+                        # Atualiza o estoque do produto
                         cur.execute(f"UPDATE {TABELA_PRODUTO} SET estoque = estoque - %s WHERE id = %s", (item['quantidade'], item['id']))
                         
+                        # Insere na tabela vendas usando os nomes corretos das colunas
                         cur.execute(
-                            f"INSERT INTO {TABELA_VENDAS} (produto_id, quantidade, valor_total, forma_pagamento, operador) VALUES (%s, %s, %s, %s, %s)",
-                            (item['id'], item['quantidade'], total_item, forma_pagamento, usuario_logado)
+                            f"INSERT INTO {TABELA_VENDAS} (produto, quantidade, total, forma_pagamento, operador) VALUES (%s, %s, %s, %s, %s)",
+                            (item['nome'], item['quantidade'], total_item, forma_pagamento, usuario_logado)
                         )
                         
                         registrar_backup(cur, item['id'], item['nome'], item['preco'], item['quantidade'], f"VENDA_{forma_pagamento.upper()}", usuario_logado)
