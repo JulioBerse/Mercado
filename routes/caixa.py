@@ -1,4 +1,3 @@
-
 from flask import Blueprint, render_template, request, jsonify, session, redirect, url_for
 from database import conectar_banco, TABELA_PRODUTO, TABELA_VENDAS, registrar_backup
 
@@ -28,10 +27,23 @@ def index():
                 conn = conectar_banco()
                 cur = conn.cursor()
                 
+                # Busca flexível por ID, Código de Barras ou Nome
                 if identificador.isdigit():
-                    cur.execute(f"SELECT id, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barras = %s LIMIT 1", (int(identificador), identificador))
+                    sql = f"""
+                        SELECT id, nome, preco 
+                        FROM {TABELA_PRODUTO} 
+                        WHERE id = %s OR codigo_barras = %s OR codigo_barras LIKE %s OR LOWER(nome) LIKE LOWER(%s)
+                        LIMIT 1
+                    """
+                    cur.execute(sql, (int(identificador), identificador, f"%{identificador}%", f"%{identificador}%"))
                 else:
-                    cur.execute(f"SELECT id, nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barras = %s OR LOWER(nome) LIKE LOWER(%s) LIMIT 1", (identificador, f"%{identificador}%"))
+                    sql = f"""
+                        SELECT id, nome, preco 
+                        FROM {TABELA_PRODUTO} 
+                        WHERE codigo_barras = %s OR LOWER(nome) LIKE LOWER(%s)
+                        LIMIT 1
+                    """
+                    cur.execute(sql, (identificador, f"%{identificador}%"))
                 
                 prod = cur.fetchone()
                 cur.close()
@@ -123,10 +135,23 @@ def buscar_produto():
         conn = conectar_banco()
         cur = conn.cursor()
         
+        # Busca abrangente por ID, Código de Barras parcial ou Nome
         if query.isdigit():
-            cur.execute(f"SELECT id, nome, preco FROM {TABELA_PRODUTO} WHERE id = %s OR codigo_barras = %s LIMIT 1", (int(query), query))
+            sql = f"""
+                SELECT id, nome, preco 
+                FROM {TABELA_PRODUTO} 
+                WHERE id = %s OR codigo_barras = %s OR codigo_barras LIKE %s OR LOWER(nome) LIKE LOWER(%s)
+                LIMIT 1
+            """
+            cur.execute(sql, (int(query), query, f"%{query}%", f"%{query}%"))
         else:
-            cur.execute(f"SELECT id, nome, preco FROM {TABELA_PRODUTO} WHERE codigo_barras = %s OR LOWER(nome) LIKE LOWER(%s) LIMIT 1", (query, f"%{query}%"))
+            sql = f"""
+                SELECT id, nome, preco 
+                FROM {TABELA_PRODUTO} 
+                WHERE codigo_barras = %s OR LOWER(nome) LIKE LOWER(%s)
+                LIMIT 1
+            """
+            cur.execute(sql, (query, f"%{query}%"))
             
         produto = cur.fetchone()
         cur.close()
