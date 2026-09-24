@@ -3,12 +3,17 @@ from database import conectar_banco, TABELA_PRODUTO
 
 caixa_bp = Blueprint('caixa', __name__)
 
-@caixa_bp.route('/')
-@caixa_bp.route('/caixa')
+@caixa_bp.route('/', methods=['GET', 'POST'])
+@caixa_bp.route('/caixa', methods=['GET', 'POST'])
 def index():
     if not session.get('usuario'):
         return redirect(url_for('auth.login'))
     
+    # Se o formulario for enviado via POST (ao pressionar ENTER)
+    if request.method == 'POST':
+        # Mantem a pagina no caixa sem dar erro 405
+        return redirect(url_for('caixa.index'))
+
     total_compra = session.get('total_compra_atual', 0.0)
     carrinho = session.get('carrinho', [])
     
@@ -26,12 +31,10 @@ def buscar_produto():
         cur = conn.cursor()
         produto = None
 
-        # 1. Se for numérico, tenta buscar primeiro por ID
         if query.isdigit():
             cur.execute(f"SELECT id, nome, preco, estoque FROM {TABELA_PRODUTO} WHERE id = %s LIMIT 1", (int(query),))
             produto = cur.fetchone()
 
-        # 2. Se não encontrou por ID, tenta por Código de Barras ou Nome
         if not produto:
             sql = f"""
                 SELECT id, nome, preco, estoque 
