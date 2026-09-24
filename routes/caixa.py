@@ -1,4 +1,4 @@
-@app.route('/buscar_produto')
+@caixa_bp.route('/buscar_produto')
 def buscar_produto():
     query = request.args.get('q', '').strip()
     if not query:
