@@ -20,7 +20,7 @@ def fechamento():
         conn = conectar_banco()
         cur = conn.cursor()
 
-        cur.execute(f"SELECT DISTINCT username FROM {TABELA_USUARIO}")
+        cur.execute(f"SELECT DISTINCT login FROM {TABELA_USUARIO}")
         lista_operadores = [row[0] for row in cur.fetchall()]
 
         query = f"SELECT total FROM {TABELA_VENDAS} WHERE DATE(data_venda) = %s"
