@@ -1,0 +1,515 @@
+v<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <title>Berse Supermercados - PDV</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap');
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body { 
+            font-family: 'Inter', sans-serif; 
+            margin: 0; 
+            min-height: 100vh; 
+            background-color: #f1f5f9; 
+            color: #0f172a;
+            display: flex; 
+            justify-content: center; 
+            align-items: center; 
+            padding: 24px 16px; 
+        }
+
+        .main-container { 
+            display: flex; 
+            gap: 24px; 
+            align-items: flex-start; 
+            max-width: 1050px; 
+            width: 100%; 
+            justify-content: center; 
+        }
+
+        /* Card do Carrinho (Esquerda) */
+        .cart-card { 
+            background: #ffffff; 
+            width: 100%; 
+            max-width: 400px; 
+            padding: 24px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.05); 
+            border: 1px solid #e2e8f0;
+            display: flex; 
+            flex-direction: column; 
+        }
+
+        .cart-card h3 { 
+            color: #2563eb; 
+            margin: 0 0 12px 0; 
+            font-size: 1.05rem; 
+            font-weight: 700;
+            border-bottom: 2px solid #3b82f6; 
+            padding-bottom: 10px; 
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .items-table-container { 
+            overflow-y: auto; 
+            max-height: 320px; 
+            margin-top: 8px; 
+            border: 1px solid #cbd5e1; 
+            border-radius: 8px; 
+            background-color: #ffffff;
+        }
+
+        .items-table { 
+            width: 100%; 
+            border-collapse: collapse; 
+            font-size: 0.875rem; 
+        }
+
+        .items-table th { 
+            background: #f8fafc; 
+            color: #64748b; 
+            position: sticky; 
+            top: 0; 
+            font-size: 0.75rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            padding: 10px;
+            font-weight: 700;
+        }
+
+        .items-table td { 
+            padding: 10px; 
+            text-align: left; 
+            border-bottom: 1px solid #f1f5f9; 
+            color: #334155;
+            font-weight: 500;
+        }
+
+        /* Card Principal (Direita) */
+        .card { 
+            background: #ffffff; 
+            width: 100%; 
+            max-width: 550px; 
+            padding: 28px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.05); 
+            border: 1px solid #e2e8f0;
+        }
+
+        label { 
+            display: block; 
+            margin-top: 14px; 
+            font-weight: 600; 
+            color: #334155; 
+            font-size: 0.875rem; 
+        }
+
+        input, select { 
+            width: 100%; 
+            padding: 12px; 
+            margin-top: 6px; 
+            border: 1.5px solid #cbd5e1; 
+            border-radius: 8px; 
+            font-size: 0.95rem; 
+            background-color: #f8fafc; 
+            color: #0f172a;
+            font-family: inherit;
+            transition: all 0.2s ease;
+        }
+
+        input:focus, select:focus { 
+            border-color: #2563eb; 
+            background-color: #ffffff;
+            outline: none; 
+            box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+        }
+
+        /* Botões */
+        button { 
+            margin-top: 16px; 
+            width: 100%; 
+            padding: 14px; 
+            background-color: #2563eb; 
+            color: white; 
+            border: none; 
+            border-radius: 8px; 
+            font-size: 1rem; 
+            font-weight: 700; 
+            cursor: pointer; 
+            transition: all 0.2s ease; 
+            font-family: inherit;
+        }
+
+        button:hover { 
+            background-color: #1d4ed8; 
+            transform: translateY(-1px);
+        }
+
+        .btn-success { 
+            background-color: #16a34a; 
+            font-size: 1.05rem;
+        }
+
+        .btn-success:hover { 
+            background-color: #15803d; 
+        }
+
+        .btn-danger { 
+            background-color: #ef4444; 
+            font-size: 0.875rem; 
+            padding: 10px; 
+            margin-top: 12px; 
+        }
+
+        .btn-danger:hover { 
+            background-color: #dc2626; 
+        }
+
+        /* Caixas de Informação */
+        .info-box { 
+            background-color: #f8fafc; 
+            border: 1px solid #e2e8f0; 
+            border-radius: 8px; 
+            padding: 14px; 
+            margin-top: 12px; 
+        }
+
+        .info-row { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center;
+            margin-bottom: 6px; 
+            font-size: 0.95rem; 
+        }
+
+        .info-row:last-child {
+            margin-bottom: 0;
+        }
+
+        .info-row strong { 
+            color: #0f172a; 
+            font-weight: 700;
+        }
+
+        /* Destasque de Totais */
+        .total-box { 
+            background: #ecfdf5; 
+            border: 1.5px solid #a7f3d0; 
+            border-radius: 10px; 
+            padding: 14px; 
+            margin-top: 14px; 
+        }
+
+        .total-box .info-row span {
+            color: #065f46;
+            font-weight: 700;
+        }
+
+        .total-box .info-row strong {
+            color: #047857;
+            font-size: 1.25rem;
+            font-weight: 800;
+        }
+
+        .cart-total-banner {
+            margin-top: 16px; 
+            background: #ecfdf5; 
+            border: 1.5px solid #a7f3d0; 
+            padding: 14px; 
+            border-radius: 10px; 
+            text-align: center;
+        }
+
+        /* Cabeçalho e Links */
+        .nav-link { 
+            display: inline-block; 
+            margin-bottom: 10px; 
+            color: #16a34a; 
+            text-decoration: none; 
+            font-weight: 700; 
+            font-size: 0.85rem; 
+            transition: color 0.2s;
+        }
+
+        .nav-link:hover {
+            color: #15803d;
+            text-decoration: underline;
+        }
+
+        .brand-header { 
+            display: flex; 
+            justify-content: space-between; 
+            align-items: center; 
+            margin-bottom: 16px; 
+            border-bottom: 1px solid #f1f5f9; 
+            padding-bottom: 12px; 
+        }
+
+        .brand-header h2 { 
+            color: #2563eb; 
+            margin: 0; 
+            font-size: 1.15rem; 
+            font-weight: 800; 
+        }
+
+        .user-info { 
+            font-size: 0.8rem; 
+            color: #64748b; 
+            text-align: right; 
+        }
+
+        .user-info a { 
+            color: #ef4444; 
+            text-decoration: none; 
+            margin-left: 6px; 
+            font-weight: 700; 
+        }
+
+        /* PIX Card */
+        .pix-card { 
+            background: #ffffff; 
+            width: 100%; 
+            max-width: 550px; 
+            padding: 28px; 
+            border-radius: 16px; 
+            box-shadow: 0 10px 25px -5px rgba(0,0,0,0.05), 0 8px 10px -6px rgba(0,0,0,0.05); 
+            border: 1px solid #e2e8f0;
+            display: none; 
+            text-align: center; 
+        }
+    </style>
+</head>
+<body>
+   <div class="main-container">
+        <!-- PAINEL ESQUERDO: CARRINHO -->
+        <div class="cart-card">
+            <h3>🛒 Itens da Compra Atual</h3>
+            <div class="items-table-container">
+                <table class="items-table">
+                    <thead>
+                        <tr>
+                            <th>Produto</th>
+                            <th>Qtd</th>
+                            <th>Total</th>
+                            <th style="text-align: center;">Ação</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for item in carrinho_atual %}
+                        <tr>
+                            <td>{{ item.nome }}</td>
+                            <td>{{ item.quantidade }}x</td>
+                            <td style="color: #16a34a; font-weight: 700;">R$ {{ "%.2f"|format(item.total) }}</td>
+                            <td style="text-align: center;">
+                                <form method="POST" style="margin: 0; display: inline;">
+                                    <input type="hidden" name="acao" value="remover">
+                                    <input type="hidden" name="indice" value="{{ loop.index0 }}">
+                                    <button type="submit" title="Remover item" style="background: none; border: none; color: #ef4444; cursor: pointer; font-size: 14px; padding: 2px 6px; font-weight: bold;">❌</button>
+                                </form>
+                            </td>
+                        </tr>
+                        {% else %}
+                        <tr>
+                            <td colspan="4" style="text-align: center; color: #94a3b8; padding: 20px 10px;">Nenhum item na compra atual.</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="cart-total-banner">
+                <span style="font-size: 0.75rem; color: #065f46; font-weight: 800; letter-spacing: 0.05em; text-transform: uppercase;">Total da Compra</span><br>
+                <span style="font-size: 1.6rem; color: #047857; font-weight: 800;">R$ {{ "%.2f"|format(total_compra_atual) }}</span>
+            </div>
+
+            {% if carrinho_atual %}
+            <form method="POST">
+                <input type="hidden" name="acao" value="cancelar">
+                <button type="submit" class="btn-danger">❌ Cancelar Compra</button>
+            </form>
+            {% endif %}
+
+            <div style="margin-top: 16px; font-size: 0.8rem; color: #64748b; text-align: center;">
+                Operador: <strong style="color: #334155;">{{ usuario }}</strong>
+            </div>
+        </div>
+
+        <!-- PAINEL DIREITO: FRENTE DE CAIXA -->
+        <div class="card" id="cardPrincipal">
+            <div style="text-align: center; margin-bottom: 12px;">
+                <div style="display: inline-block; width: 34px; height: 34px; background-color: #bc002d; border-radius: 50%; line-height: 34px; color: white; font-weight: bold; font-size: 16px; margin-bottom: 4px;">山</div>
+                <h2 style="color: #0f172a; font-size: 1rem; font-weight: 800; letter-spacing: 2px; margin: 0;">GRUPO YAMASAKI</h2>
+            </div>
+            <hr style="border: none; height: 1px; background: #e2e8f0; margin-bottom: 16px;">
+
+            <div class="brand-header">
+                <h2>🏪 Frente de Caixa</h2>
+                <div class="user-info">
+                    Operador: <strong style="color: #334155;">{{ usuario }}</strong> <a href="/logout">[Sair]</a>
+                </div>
+            </div>
+            <div style="margin-bottom: 16px;">
+                <a class="nav-link" href="/estoque/entrada">📦 Ir para Entrada de Estoque →</a>
+                <a class="nav-link" href="/fechamento" style="color: #bc002d; margin-left: 12px;">📊 Fechamento</a>
+            </div>
+
+            <form id="formVenda" method="POST">
+                <input type="hidden" name="acao" value="adicionar">
+                
+                <label for="identificador">ID ou Código de Barras:</label>
+                <input type="text" id="identificador" name="identificador" placeholder="Digite ou bipe o código" required autofocus onblur="buscarProduto()" onkeydown="tratarTeclaIdentificador(event)">
+                
+                <div class="info-box">
+                    <div class="info-row">
+                        <span>Produto:</span>
+                        <strong id="nome_produto" style="color: #1e293b;">Aguardando busca...</strong>
+                    </div>
+                    <div class="info-row">
+                        <span>Valor Unitário:</span>
+                        <strong id="valor_unitario" style="color: #1e293b;">R$ 0,00</strong>
+                    </div>
+                </div>
+
+                <label for="quantidade">Quantidade:</label>
+                <input type="number" id="quantidade" name="quantidade" value="1" min="1" required oninput="calcularTotal()" onkeydown="tratarTeclaQuantidade(event)">
+
+                <div class="info-box total-box">
+                    <div class="info-row">
+                        <span>TOTAL DO ITEM:</span>
+                        <strong id="valor_total">R$ 0,00</strong>
+                    </div>
+                </div>
+
+                <button type="submit" id="btnAdicionar">Adicionar Item (ENTER)</button>
+            </form>
+
+            {% if carrinho_atual %}
+            <form method="POST" style="margin-top: 20px; border-top: 2px dashed #e2e8f0; padding-top: 16px;">
+                <input type="hidden" name="acao" value="finalizar">
+                
+                <label for="forma_pagamento">Forma de Pagamento:</label>
+                <select name="forma_pagamento" id="forma_pagamento" onchange="tratarFormaPagamento()">
+                    <option value="Dinheiro">Dinheiro</option>
+                    <option value="Cartao">Cartão</option>
+                    <option value="Pix">Pix</option>
+                </select>
+
+                <button type="submit" class="btn-success">✅ Finalizar Venda / Fechar Compra</button>
+                <div id="data-extenso" style="font-size: 0.8rem; color: #64748b; text-align: center; margin-top: 12px;"></div>
+            </form>
+            {% endif %}
+        </div>
+
+        <!-- TELA DO PIX -->
+        <div class="pix-card" id="cardPix">
+            <h2 style="color: #2563eb; margin-top: 0; font-weight: 800;">📱 Pagamento via Pix</h2>
+            <p style="color: #475569; font-size: 0.9rem;">Escaneie o QR Code abaixo com o aplicativo do seu banco:</p>
+            
+            <div style="margin: 16px 0;">
+                <img src="https://api.qrserver.com/v1/create-qr-code/?size=220x220&data=00020126400014br.gov.bcb.pix0118py9dm.mt@gmail.com5204000053039865802BR5915BERSEJULIOCESAR6009Sao Paulo610901227-20062230519daqr2112582259416686304F335" alt="QR Code Pix" style="width: 200px; height: 200px; border-radius: 12px; border: 1px solid #cbd5e1; padding: 6px; background: #fff;">
+            </div>
+            
+            <p style="font-size: 0.85rem; color: #475569;">Chave Pix: <strong style="color: #0f172a;">py9dm.mt@gmail.com</strong></p>
+            <p style="font-size: 1.1rem; color: #16a34a; font-weight: 800;">Valor: R$ {{ "%.2f"|format(total_compra_atual) }}</p>
+            
+            <form method="POST">
+                <input type="hidden" name="acao" value="finalizar">
+                <input type="hidden" name="forma_pagamento" value="Pix">
+                <button type="submit" class="btn-success" style="margin-top: 12px;">✅ Confirmar Recebimento Pix e Concluir</button>
+            </form>
+
+            <button type="button" onclick="voltarDoPix()" style="background-color: #64748b; margin-top: 10px;">← Voltar / Alterar Pagamento</button>
+        </div>
+   </div>
+
+   {% if msg %}
+        <div style="position: fixed; bottom: 16px; right: 16px; z-index: 999; background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: 12px 16px; border-radius: 8px; font-weight: 600; box-shadow: 0 4px 12px rgba(0,0,0,0.1);">
+            {{ msg }}
+        </div>
+   {% endif %}
+
+   <script>
+        let precoUnitarioAtual = 0;
+
+        async function buscarProduto() {
+            const identificador = document.getElementById('identificador').value.trim();
+            if (!identificador) { resetarCampos(); return false; }
+            try {
+                const response = await fetch('/buscar_produto?q=' + encodeURIComponent(identificador));
+                const data = await response.json();
+                if (data.sucesso) {
+                    document.getElementById('nome_produto').innerText = data.nome;
+                    precoUnitarioAtual = parseFloat(data.preco);
+                    document.getElementById('valor_unitario').innerText = 'R$ ' + precoUnitarioAtual.toFixed(2).replace('.', ',');
+                    calcularTotal();
+                    return true;
+                } else {
+                    document.getElementById('nome_produto').innerText = 'Produto não encontrado';
+                    resetarCampos();
+                    return false;
+                }
+            } catch (e) { resetarCampos(); return false; }
+        }
+
+        async function tratarTeclaIdentificador(e) {
+            if (e.key === 'Enter' || e.key === 'Tab') {
+                e.preventDefault();
+                const achou = await buscarProduto();
+                if (achou) {
+                    const campoQtd = document.getElementById('quantidade');
+                    campoQtd.focus();
+                    campoQtd.select();
+                }
+            }
+        }
+        function tratarTeclaQuantidade(e) { if (e.key === 'Enter') { calcularTotal(); } }
+        function calcularTotal() {
+            const qtd = parseInt(document.getElementById('quantidade').value) || 0;
+            const total = precoUnitarioAtual * qtd;
+            document.getElementById('valor_total').innerText = 'R$ ' + total.toFixed(2).replace('.', ',');
+        }
+        function resetarCampos() {
+            document.getElementById('valor_unitario').innerText = 'R$ 0,00';
+            document.getElementById('valor_total').innerText = 'R$ 0,00';
+            precoUnitarioAtual = 0;
+        }
+
+        function tratarFormaPagamento() {
+            const forma = document.getElementById('forma_pagamento').value;
+            if (forma === 'Pix') {
+                document.getElementById('cardPrincipal').style.display = 'none';
+                document.getElementById('cardPix').style.display = 'block';
+            }
+        }
+
+        function voltarDoPix() {
+            document.getElementById('forma_pagamento').value = 'Dinheiro';
+            document.getElementById('cardPix').style.display = 'none';
+            document.getElementById('cardPrincipal').style.display = 'block';
+        }
+   </script>
+   <script>
+    window.addEventListener('DOMContentLoaded', (event) => {
+        function atualizarDataEHora() {
+            const hoje = new Date();
+            const opcoesData = { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' };
+            let dataFormatada = hoje.toLocaleDateString('pt-BR', opcoesData);
+            dataFormatada = dataFormatada.charAt(0).toUpperCase() + dataFormatada.slice(1);
+            const horaFormatada = hoje.toLocaleTimeString('pt-BR');
+            const elementoData = document.getElementById('data-extenso');
+            if (elementoData) {
+                elementoData.innerHTML = `📅 <strong>${dataFormatada}</strong> — ⏰ <strong>${horaFormatada}</strong>`;
+            }
+        }
+        atualizarDataEHora();
+        setInterval(atualizarDataEHora, 1000);
+    });
+</script>
+</body>
+</html>

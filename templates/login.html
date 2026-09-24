@@ -1,0 +1,269 @@
+<!DOCTYPE html>
+<html lang="pt-br">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>POS System — GRUPO YAMASAKI</title>
+    <!-- Fonte Nipo-Moderna via Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Noto+Sans+JP:wght@400;500;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet">
+    
+    <style>
+        :root {
+            --bg-body: #f4f5f7;
+            --card-bg: #ffffff;
+            --primary-red: #bc002d; /* Vermelho Hinomaru */
+            --primary-dark: #8c0022;
+            --text-main: #1e293b;
+            --text-muted: #64748b;
+            --border-color: #e2e8f0;
+            --status-green: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Inter', 'Noto Sans JP', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-body);
+            background-image: radial-gradient(#cbd5e1 0.75px, transparent 0.75px);
+            background-size: 16px 16px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            color: var(--text-main);
+        }
+
+        .login-card {
+            background: var(--card-bg);
+            width: 100%;
+            max-width: 420px;
+            padding: 40px;
+            border-radius: 8px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 10px 25px -5px rgba(0, 0, 0, 0.05), 0 8px 10px -6px rgba(0, 0, 0, 0.01);
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* Linha superior estilo Enterprise */
+        .login-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            height: 4px;
+            background: var(--primary-red);
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+        }
+
+        .logo-box {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            width: 48px;
+            height: 48px;
+            background-color: var(--primary-red);
+            color: #ffffff;
+            font-weight: 700;
+            font-size: 20px;
+            border-radius: 6px;
+            margin-bottom: 12px;
+            box-shadow: 0 4px 12px rgba(188, 0, 45, 0.25);
+        }
+
+        .title {
+            font-size: 20px;
+            font-weight: 700;
+            letter-spacing: 2px;
+            color: var(--text-main);
+            text-transform: uppercase;
+        }
+
+        .subtitle {
+            font-size: 12px;
+            color: var(--text-muted);
+            margin-top: 4px;
+            letter-spacing: 0.5px;
+        }
+
+        .system-status {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            background: #f1f5f9;
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 11px;
+            font-family: 'JetBrains Mono', monospace;
+            color: var(--text-muted);
+            margin-top: 12px;
+            border: 1px solid var(--border-color);
+        }
+
+        .status-dot {
+            width: 6px;
+            height: 6px;
+            background-color: var(--status-green);
+            border-radius: 50%;
+            box-shadow: 0 0 6px var(--status-green);
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        label {
+            display: flex;
+            justify-content: space-between;
+            font-size: 12px;
+            font-weight: 600;
+            color: var(--text-main);
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+
+        label .jp-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            font-weight: 400;
+        }
+
+        input {
+            width: 100%;
+            padding: 12px 14px;
+            font-size: 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 6px;
+            background-color: #fafafa;
+            color: var(--text-main);
+            transition: all 0.2s ease;
+            outline: none;
+            font-family: 'JetBrains Mono', monospace;
+        }
+
+        input:focus {
+            background-color: #ffffff;
+            border-color: var(--primary-red);
+            box-shadow: 0 0 0 3px rgba(188, 0, 45, 0.1);
+        }
+
+        .btn-submit {
+            width: 100%;
+            padding: 14px;
+            background-color: var(--primary-red);
+            color: #ffffff;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 600;
+            letter-spacing: 1px;
+            text-transform: uppercase;
+            cursor: pointer;
+            transition: background-color 0.2s ease, transform 0.1s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin-top: 10px;
+        }
+
+        .btn-submit:hover {
+            background-color: var(--primary-dark);
+        }
+
+        .btn-submit:active {
+            transform: scale(0.99);
+        }
+
+        .msg-box {
+            margin-top: 20px;
+            padding: 12px;
+            border-radius: 6px;
+            background-color: #fef2f2;
+            border: 1px solid #fecaca;
+            color: #991b1b;
+            font-size: 13px;
+            font-weight: 500;
+            text-align: center;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 6px;
+        }
+
+        .footer-info {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 11px;
+            color: var(--text-muted);
+            font-family: 'JetBrains Mono', monospace;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="login-card">
+        <div class="header">
+            <div class="logo-box">山</div>
+            <h2 class="title">GRUPO YAMASAKI</h2>
+            <p class="subtitle">販売時点管理システム — POS ENTERPRISE</p>
+            
+            <div class="system-status">
+                <span class="status-dot"></span>
+                <span>NEON-DB: ONLINE</span>
+            </div>
+        </div>
+
+        <form method="POST" action="/login">
+            <div class="form-group">
+                <label for="username">
+                    <span>Usuário</span>
+                    <span class="jp-label">ユーザー</span>
+                </label>
+                <input type="text" id="username" name="username" placeholder="digite seu usuário..." required autofocus autocomplete="off">
+            </div>
+
+            <div class="form-group">
+                <label for="password">
+                    <span>Senha</span>
+                    <span class="jp-label">パスワード</span>
+                </label>
+                <input type="password" id="password" name="password" placeholder="••••••••" required>
+            </div>
+
+            <button type="submit" class="btn-submit">
+                <span>Entrar no Sistema</span>
+                <span style="font-weight: normal; font-size: 12px;">(ログイン)</span>
+            </button>
+        </form>
+
+        {% if msg %}
+            <div class="msg-box">
+                <span>⚠️ {{ msg }}</span>
+            </div>
+        {% endif %}
+
+        <div class="footer-info">
+            <span>SYS VER: 2.4.0</span>
+            <span>RONDONÓPOLIS / MT</span>
+        </div>
+    </div>
+
+</body>
+</html>
