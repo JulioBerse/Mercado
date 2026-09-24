@@ -124,7 +124,6 @@ def index():
         msg=msg
     )
 
-
 @caixa_bp.route('/buscar_produto')
 def buscar_produto():
     query = request.args.get('q', '').strip()
@@ -135,25 +134,27 @@ def buscar_produto():
         conn = conectar_banco()
         cur = conn.cursor()
         
-        # Busca abrangente por ID, Código de Barras parcial ou Nome
-        if query.isdigit():
-            sql = f"""
-                SELECT id, nome, preco 
-                FROM {TABELA_PRODUTO} 
-                WHERE id = %s OR codigo_barras = %s OR codigo_barras LIKE %s OR LOWER(nome) LIKE LOWER(%s)
-                LIMIT 1
-            """
-            cur.execute(sql, (int(query), query, f"%{query}%", f"%{query}%"))
-        else:
-            sql = f"""
-                SELECT id, nome, preco 
-                FROM {TABELA_PRODUTO} 
-                WHERE codigo_barras = %s OR LOWER(nome) LIKE LOWER(%s)
-                LIMIT 1
-            """
-            cur.execute(sql, (query, f"%{query}%"))
-            
+        # Tentativa 1: Busca exata por ID ou código de barras
+        sql = f"""
+            SELECT id, nome, preco, estoque 
+            FROM {TABELA_PRODUTO} 
+            WHERE id::text = %s OR codigo_barras = %s 
+            LIMIT 1
+        """
+        cur.execute(sql, (query, query))
         produto = cur.fetchone()
+
+        # Tentativa 2: Se não achar, busca parcial por nome
+        if not produto:
+            sql_nome = f"""
+                SELECT id, nome, preco, estoque 
+                FROM {TABELA_PRODUTO} 
+                WHERE LOWER(nome) LIKE LOWER(%s) 
+                LIMIT 1
+            """
+            cur.execute(sql_nome, (f"%{query}%",))
+            produto = cur.fetchone()
+
         cur.close()
         conn.close()
 
@@ -162,7 +163,8 @@ def buscar_produto():
                 'sucesso': True,
                 'id': produto[0],
                 'nome': produto[1],
-                'preco': float(produto[2])
+                'preco': float(produto[2]),
+                'estoque': produto[3] if len(produto) > 3 else 0
             })
         
         return jsonify({'sucesso': False, 'mensagem': 'Produto não encontrado'})
